@@ -1,3 +1,8 @@
+<?php
+//echo("Sup dawgs! Party in the woof woof!");
+
+?>
+
 <html>
 	<head>
 		<title>My first Three.js app</title>
@@ -10,8 +15,5 @@
 		<script src="../javascript/three.min.js"></script>
 		<script src="../javascript/jquery-2.1.4.min.js"></script>
 		<script src="../javascript/inty-js.js"></script>
-		<script>
-			// Our Javascript will go here.
-		</script>
 	</body>
 </html>
