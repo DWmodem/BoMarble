@@ -9,11 +9,10 @@ body {
 	height:100%;
 }
 
-
-
 #wrapper {
-	min-height:100%;
-	position:relative;
+	min-height: 100%;
+	position: relative;
+	/*background: #CCFF66;*/
 }
 
 .darkerBO{
@@ -21,25 +20,39 @@ body {
 }
 
 #header {
-	background:#ededed;
-	padding:10px;
+	background: #ededed;
+	padding: 10px;
 }
 
 #content {
-	padding-bottom:100px; /* Height of the footer element */
+	padding-bottom: 100px; /* Height of the footer element */
 }
 
-
+.fillWidth{
+	width: 100%;
+}
 
 #footer {
-	background:#ffab62;
-	width:100%;
-	height:100px;
-	position:absolute;
-	bottom:0;
-	left:0;
+	background: #ffab62;
+	width: 100%;
+	height: 100px;
+	position: relative;
+	bottom: 0;
+	left: 0;
 }
 
 .buttonDiv{
 	margin: 0 auto;
+}
+
+#primaryCanvas{
+	width: 500px;
+	height: 400px;
+}
+#primaryCanvas.fillWidth{
+	width: 100%;
+	height: 400px;
+}
+.red{
+	background: red;
 }
