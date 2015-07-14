@@ -29,7 +29,7 @@ function onUpdate(region, engine){
 function render(region, engine){
 	
 	requestAnimationFrame(function(){
-		render(region);
+		render(region, engine);
 	});
 
 	engine.printRegion(region);
