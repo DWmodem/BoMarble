@@ -9,8 +9,8 @@
 var GROWTH_RATE = 0.005;
 var FIRE_RATE = 0.00001;
 var MAX_TREE_SIZE = 10;
-var REGION_WIDTH = 20;
-var REGION_HEIGHT = 20;
+var REGION_WIDTH = 150;
+var REGION_HEIGHT = 150;
 
 var REGION_HEIGHT_LIMIT = REGION_HEIGHT-1;
 var REGION_WIDTH_LIMIT = REGION_WIDTH-1;
@@ -214,5 +214,6 @@ $( document ).ready(function() {
 		displayRegion = region;
 	}, 17);
 
-	render(displayRegion, bobRoss);
+//	render(displayRegion, bobRoss);
+	initCanvas($("#primaryCanvas")[0], REGION_WIDTH, REGION_HEIGHT);
 });

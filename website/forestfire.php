@@ -13,10 +13,10 @@
 	</head>
 
 	<body>
-		<div id="wrapper"></div>
 		<div id="canvas">
 			<canvas id="primaryCanvas"></canvas>	
 		</div>
+		<div id="wrapper"></div>
 		<div id="footer"></div>	
 
 		<script src="../javascript/three.min.js"></script>
