@@ -68,6 +68,37 @@ function initCanvas(canvas, m, n){
 	}
 }
 
+//Takes a region, and prints the state of every square onto the canvas.
+function updateCanvas(canvas, m, n, region){
+
+	width = canvas.width;
+	height = canvas.height;
+
+	squareWidth = Math.floor(width/m);	//We want the width in pixels, so whole numbers only
+	squareHeight = Math.floor(height/n);
+	ctx = canvas.getContext("2d");
+
+	var color = "white";
+
+	for(var i = 0; i < m; i++){
+		for(var j = 0; j < n; j++){
+
+			if(region[i][j].growthLevel > 1){
+				color = "green";
+			} else if(region[i][j].fireLevel > 0){
+				color = "red";
+			} else {
+				color = "white";
+			}
+
+			ctx.beginPath();
+			ctx.fillStyle = color;
+			ctx.rect( i*squareWidth , j*squareHeight, squareWidth, squareHeight);		//rect(x, y, width, height);
+			ctx.fill();
+		}
+	}
+}
+
 //50% chance to return true, 50% chance to return false.
 function flipCoin(odds){
 

@@ -13,9 +13,7 @@
 	</head>
 
 	<body>
-		<div id="canvas">
-			<canvas id="primaryCanvas"></canvas>	
-		</div>
+
 		<div id="wrapper"></div>
 		<div id="footer"></div>	
 

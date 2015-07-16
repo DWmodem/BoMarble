@@ -6,9 +6,9 @@
 //Fire is only applied to trees with a non-zero growth value
 //Fire cannot spawn on empty ground
 
-var GROWTH_RATE = 0.005;
-var FIRE_RATE = 0.00001;
-var MAX_TREE_SIZE = 10;
+var GROWTH_RATE = 0.0025;
+var FIRE_RATE = 0.0001;
+var MAX_TREE_SIZE = 2;
 var REGION_WIDTH = 150;
 var REGION_HEIGHT = 150;
 
@@ -24,18 +24,6 @@ function onUpdate(region, engine){
 	region = flameRegion(region);
 	return region;
 }
-
-//Display the state of the region to the viewer
-function render(region, engine){
-	
-	requestAnimationFrame(function(){
-		render(region, engine);
-	});
-
-	engine.printRegion(region);
-	//drawing code goes here
-}
-
 
 //Determine if an even should occur, in function of a supplied probability (1 = 100%, 0.01 = 1%)
 function eventOccurs(probabilityValue){
@@ -61,8 +49,9 @@ function growRegion(region){
 				continue;
 
 			//Grow a new tree! If the growth rate allows it
-			} else if((region[m][n].growthLevel === 0) && (eventOccurs(GROWTH_RATE))) {
+			} else if((region[m][n].growthLevel === 0) && (region[m][n].fireLevel === 0) && (eventOccurs(GROWTH_RATE))) {
 				region[m][n].growthLevel++;
+				region[m][n].isAlive = true;
 			}
 		}
 	}
@@ -79,7 +68,7 @@ function flameRegion(region){
 			
 			//If there is a tree, lighting strikes! (if eventOccurs)
 			if(eventOccurs(FIRE_RATE) && (region[m][n].growthLevel > 0) && (region[m][n].fireLevel <= 0 )){
-				region[m][n].fireLevel = 1;
+				region[m][n] = catchFire(region[m][n]);
 			}
 		}
 	}
@@ -95,6 +84,8 @@ function fireSpreads(region){
 			//If there is a tree, lighting strikes! (if eventOccurs)
 			//Make sure not to set fire to an element outside of the region
 			if(region[m][n].fireLevel >= 1){
+				
+				region[m][n].fireLevel--;
 
 				//Top left
 				if(((m-1) >= 0 ) && ((n-1) >= 0 )){
@@ -197,6 +188,16 @@ function catchFire(tree){
 	return tree;
 }
 
+//Display the state of the region to the viewer
+function render(region, engine, canvas) {
+	
+	requestAnimationFrame(function(){
+		render(region, engine, canvas);
+	});
+
+	updateCanvas(canvas, REGION_WIDTH, REGION_HEIGHT, region);
+	//drawing code goes here
+}
 
 //Once the document is loaded properly, run onUpdate.
 $( document ).ready(function() {
@@ -208,12 +209,13 @@ $( document ).ready(function() {
 	//Display region is the region selected for printout. Strictly speaking this does nothing, since region and displayRegion are the same reference anyways
 	var region = getRegion();
 	var displayRegion = region;
+	var canvas = $("#primaryCanvas")[0];
 
 	setInterval(function(){
 		region = onUpdate(region, bobRoss);
 		displayRegion = region;
 	}, 17);
 
-//	render(displayRegion, bobRoss);
+	render(displayRegion, bobRoss, canvas);
 	initCanvas($("#primaryCanvas")[0], REGION_WIDTH, REGION_HEIGHT);
 });

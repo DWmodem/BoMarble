@@ -57,5 +57,6 @@
 			  </div><!-- /.container-fluid -->
 			</nav>
 		</header>
+				<canvas id="primaryCanvas"></canvas>
 		</div>	
 
