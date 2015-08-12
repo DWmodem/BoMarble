@@ -38,37 +38,10 @@ function dbpr(string){
 	}
 }
 
-//Boundary is the spacing in between squares
 //m is the number of squares high (number of rows)
 //n is the number of squares wide (number of columns)
-function initCanvas(canvas, m, n){
-	width = canvas.width;
-	height = canvas.height;
-
-	squareWidth = Math.floor(width/m);	//We want the width in pixels, so whole numbers only
-	squareHeight = Math.floor(height/n);
-	ctx = canvas.getContext("2d");
-
-	var color = "red";
-
-	for(var i = 0; i < m; i++){
-		for(var j = 0; j < n; j++){
-
-			if(flipCoin()){
-				color = "green";
-			} else {
-				color = "red";
-			}
-
-			ctx.beginPath();
-			ctx.fillStyle = color;
-			ctx.rect( i*squareWidth , j*squareHeight, squareWidth, squareHeight);		//rect(x, y, width, height);
-			ctx.fill();			
-		}
-	}
-}
-
 //Takes a region, and prints the state of every square onto the canvas.
+//new comment!
 function updateCanvas(canvas, m, n, region){
 
 	width = canvas.width;

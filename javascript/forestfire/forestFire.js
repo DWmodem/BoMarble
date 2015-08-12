@@ -17,6 +17,7 @@ var REGION_WIDTH_LIMIT = REGION_WIDTH-1;
 
 var isDebugging = false;
 //update the state of the model
+
 function onUpdate(region, engine){
 
 	region = growRegion(region);
@@ -31,7 +32,6 @@ function eventOccurs(probabilityValue){
 	if(probabilityValue > Math.random()){
 		return true;
 	}
-
 	return false;
 }
 
@@ -214,8 +214,7 @@ $( document ).ready(function() {
 	setInterval(function(){
 		region = onUpdate(region, bobRoss);
 		displayRegion = region;
-	}, 17);
+	}, 25);
 
 	render(displayRegion, bobRoss, canvas);
-	initCanvas($("#primaryCanvas")[0], REGION_WIDTH, REGION_HEIGHT);
 });
