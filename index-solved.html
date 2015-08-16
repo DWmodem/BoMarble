@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.2/css/bootstrap-theme.min.css" type="text/css" rel="stylesheet">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.2/css/bootstrap.min.css" type="text/css" rel="stylesheet">
+
+	<style type="text/css">
+		.tile-row:first-child .tile {
+			border-top: 1px solid #999;
+		}
+
+		.tile:first-child {
+			border-left: 1px solid #999;
+		}
+
+		.tile {
+			border-right: 1px solid #999;
+			border-bottom: 1px solid #999;
+			display: inline-block;
+			float: left;
+			width: 10px;
+			height: 10px;
+
+			/* Make sure the tiles can't be dragged, since it ruins our own click-and-drag effect. */
+			-moz-user-select: none;
+			-webkit-user-select: none;
+		}
+
+		.color-palette {
+			display: inline-block;
+			margin-bottom: 15px;
+			padding: 10px;
+			background: rgba(0, 0, 150, 0.2);
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		.color-palette-tile {
+			width: 20px;
+			height: 20px;
+			float: left;
+			margin-left: 10px;
+			border: 1px solid black;
+			outline: 2px solid white
+		}
+
+		.color-palette-tile:first-of-type {
+			margin-left: 0;
+		}
+
+		.color-palette-tile.selected {
+			outline-color: rgb(255, 255, 100);
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<h1>Super Awesome Paint Program</h1>
+		<div id="tiles"></div>
+	</div>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.2/js/bootstrap.min.js"></script>
+
+	<script>
+
+	/**
+	 * The Paint class represents the paint canvas.
+	 * It is responsible for creating the tiles, and some basic functionality like clicking to color a tile.
+	 * @class
+	 */
+	(function() {
+
+		/**
+		 * Constructor.
+		 *
+		 * @param {HTMLElement|jQuery Object} container - A DOM element to use as a container for the tiles.
+		 * @param {int} width - The number of tiles to create horizontally.
+		 * @param {int} height - The number of tiles to create vertically.
+		 */
+		var Paint = function(container, width, height) {
+			this.container = $(container);
+
+			this.tilesByXY = [];
+			this.tilesByID = {};
+
+			this.width = width;
+			this.height = height;
+
+			this.plugins = {};
+		};
+
+		/**
+		 * Intializes the Paint canvas.
+		 *
+		 * First, this creates the tiles inside the specified container.
+		 * Then it binds the events required to enable user interaction.
+		 */
+		Paint.prototype.init = function() {
+			this.primaryColor = new Color(0x99, 0x99, 0x99);
+
+			this._createTiles();
+			this._bindEvents();
+		};
+
+		/**
+		 * Gets a PaintTile object based on the corresponding HTMLElement.
+		 *
+		 * @param {HTMLElement} element - The HTMLElement to use to look up the corresponding tile.
+		 * @returns {PaintTile} The corresponding tile object.
+		 */
+		Paint.prototype.getTileFromElement = function(element) {
+			return this.tilesByID[$(element)[0].id];
+		};
+
+
+		/**
+		 * Gets a PaintTile object based on its x-y coordinates.
+		 *
+		 * @param {number} x - The x-coordinate in the tiles grid to use as lookup.
+		 * @param {number} y - The y-coordinate in the tiles grid to use as lookup.
+		 * @returns {PaintTile} The corresponding tile object.
+		 */
+		Paint.prototype.getTileFromXY = function(x, y) {
+			if (this.tilesByXY[x]) {
+				return this.tilesByXY[x][y];
+			}
+			return undefined;
+		};
+
+		/**
+		 * @returns {Color} The current primary color for the paint canvas.
+		 */
+		Paint.prototype.getPrimaryColor = function() {
+			return this.primaryColor;
+		};
+
+		/**
+		 * @param {Color} color - The new primary color for the paint canvas.
+		 */
+		Paint.prototype.setPrimaryColor = function(color) {
+			this.primaryColor = color;
+		};
+
+		/**
+		 * Registers a plugin to the Paint object.
+		 *
+		 * @param {String} pluginName - The name of the plugin, for debugging purposes.
+		 * @param {Object} pluginObject - The plugin object. Must have an init() function that takes the Paint object.
+		 */
+		Paint.prototype.registerPlugin = function(pluginName, pluginObject) {
+			if (!$.isFunction(pluginObject.init)) {
+				throw new Error("Paint plugins must have a function with the signature init(Paint).")
+			}
+
+			this.plugins[pluginName] = pluginObject;
+			pluginObject.init(this);
+		};
+
+		/**
+		 * Creates the tiles inside the specified container.
+		 */
+		Paint.prototype._createTiles = function() {
+			for (var y = 0; y < this.width; y++) {
+				var row = $('<div class="tile-row clearfix">');
+
+				for (var x = 0; x < this.height; x++) {
+					var tile = new PaintTile(x, y);
+
+					// Put the actual tile HTMLElement into the row.
+					tile.getElement().appendTo(row);
+
+					// Store tiles by x-y coordinates for easy retrieval when looking for neighbours.
+					if (!(x in this.tilesByXY)) {
+						this.tilesByXY[x] = [];
+					}
+					this.tilesByXY[x][y] = tile;
+
+					// Store tiles by ID for easy retrieval by HTMLElement (in event handlers).
+					this.tilesByID[tile.getID()] = tile;
+				}
+
+				row.appendTo(this.container);
+			}
+		};
+
+		/**
+		 * Binds the events to the container.
+		 *
+		 * Clicking on a tile colors it with the currently defined primary color for the paint canvas.
+		 * Entering a tile with the left mouse button down colors it as well. So click-and-dragging allows to draw a boundary.
+		 */
+		Paint.prototype._bindEvents = function() {
+			var self = this;
+
+			// Set tile color when a tile is clicked.
+			this.container.on('click', '.tile', function(e) {
+				self.getTileFromElement(this).setColor(self.getPrimaryColor());
+			});
+
+			// Set tile color if the mouse has entered a new tile and the left button is already clicked down.
+			var lastTileEntered = null;
+
+			this.container.on('mouseenter', '.tile', function(e) {
+				if (e.which === 1) {
+					var currentTile = self.getTileFromElement(this);
+
+					currentTile.setColor(self.getPrimaryColor());
+
+					// Interpolate all the tiles between the last entered tile and the current one.
+					if (lastTileEntered) {
+						self._interpolateMouseMovement(currentTile, lastTileEntered);
+					}
+
+					lastTileEntered = self.getTileFromElement(this);
+				}
+			});
+
+			this.container.on('mouseup', '.tile', function(e) {
+				lastTileEntered = null;
+			});
+
+			this.container.on('mousedown', '.tile', function(e) {
+				lastTileEntered = self.getTileFromElement(this);
+			});
+		};
+
+		/**
+		 * Helper function to make sure all tiles are colored in when click-and-dragging quickly.
+		 * The mouseenter event doesn't fire very often, which causes some tiles to not get colored
+		 * when moving the mouse quickly.
+		 * This function takes the last seen tile and the current tile, draws a line between them and
+		 * colors all the tiles in between.
+		 */
+		Paint.prototype._interpolateMouseMovement = function(fromTile, toTile) {
+			var vector = [toTile.getX() - fromTile.getX(), toTile.getY() - fromTile.getY()];
+			var distance = Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1]);
+			var unitVector = [vector[0] / distance, vector[1] / distance];
+
+			for (var i = 1; i <= distance; i++) {
+				var x = Math.floor(fromTile.getX() + i * unitVector[0]);
+				var y = Math.floor(fromTile.getY() + i * unitVector[1]);
+				this.getTileFromXY(x, y).setColor(this.getPrimaryColor());
+			}
+
+		};
+
+		window.Paint = Paint;
+	})();
+
+	/**
+	 * The PaintTile class represents a single tile in the grid.
+	 * @class
+	 */
+	(function() {
+
+		/**
+		 * Constructor.
+		 * The constructor creates an HTMLElement and generates a unique ID for it.
+		 *
+		 * @param {number} x - The x-coordinate of the tile.
+		 * @param {number} y - The y-coordinate of the tile.
+		 */
+		var PaintTile = function(x, y) {
+			this.$element = $('<div class="tile">');
+			this.$element.prop('id', 'tile-' + x + '-' + y);
+
+			this.x = x;
+			this.y = y;
+
+			this.setColor(new Color(0xFF, 0xFF, 0xFF));
+		}
+
+		/**
+		 * @returns {HTMLElement} The HTMLElement that this tile wraps.
+		 */
+		PaintTile.prototype.getElement = function() {
+			return this.$element;
+		}
+
+		/**
+		 * @returns {string} The ID of the tile (this is also used as the HTML ID attribute).
+		 */
+		PaintTile.prototype.getID = function() {
+			return this.$element.prop('id');
+		}
+
+		/**
+		 * @returns {number} The x-coordinate of the tile.
+		 */
+		PaintTile.prototype.getX = function() {
+			return this.x;
+		};
+
+		/**
+		 * @returns {number} The y-coordinate of the tile.
+		 */
+		PaintTile.prototype.getY = function() {
+			return this.y;
+		};
+
+		/**
+		 * @returns {Color} The color of the tile.
+		 */
+		PaintTile.prototype.getColor = function() {
+			return this.color;
+		};
+
+		/**
+		 * Sets the color of the tile.
+		 *
+		 * @param {Color} color - The new color of the tile.
+		 */
+		PaintTile.prototype.setColor = function(color) {
+			this.color = color;
+			this.$element[0].style.backgroundColor = this.color.asCssValue();
+		};
+
+		window.PaintTile = PaintTile;
+	})();
+
+	/**
+	 * Encapsulates a color as a single object.
+	 * @class
+	 */
+	(function() {
+
+		/**
+		 * Constructor.
+		 *
+		 * @param {int} r - The red value of the color, between 0 and 255.
+		 * @param {int} g - The green value of the color, between 0 and 255.
+		 * @param {int} b - The blue value of the color, between 0 and 255.
+		 */
+		var Color = function(r, g, b) {
+			this.r = parseInt(r, 10) || 0;
+			this.g = parseInt(g, 10) || 0;
+			this.b = parseInt(b, 10) || 0;
+		};
+
+		/**
+		 * @param {Color} otherColor - The color to compare against.
+		 * @returns {Boolean} True if the passed color has all components equal to those of the current color.
+		 */
+		Color.prototype.equals = function(otherColor) {
+			return this.r === otherColor.r
+			    && this.g === otherColor.g
+			    && this.b === otherColor.b;
+		};
+
+		/**
+		 * @returns {string} The color as a value that can be used with CSS.
+		 */
+		Color.prototype.asCssValue = function() {
+			return "rgb(" + this.r + ", " + this.g + ", " + this.b + ")";
+		};
+
+		/**
+		 * Transforms a CSS color value into a Color object.
+		 * See http://stackoverflow.com/a/7464608/539097
+		 *
+		 * @param {String} colorString - The string representation of a color.
+		 * @returns {Color} A Color object representing the given color.
+		 */
+		Color.fromCssValue = function(colorString) {
+			var colors = {
+				"aliceblue": "#f0f8ff",
+				"antiquewhite": "#faebd7",
+				"aqua": "#00ffff",
+				"aquamarine": "#7fffd4",
+				"azure": "#f0ffff",
+				"beige": "#f5f5dc",
+				"bisque": "#ffe4c4",
+				"black": "#000000",
+				"blanchedalmond": "#ffebcd",
+				"blue": "#0000ff",
+				"blueviolet": "#8a2be2",
+				"brown": "#a52a2a",
+				"burlywood": "#deb887",
+				"cadetblue": "#5f9ea0",
+				"chartreuse": "#7fff00",
+				"chocolate": "#d2691e",
+				"coral": "#ff7f50",
+				"cornflowerblue": "#6495ed",
+				"cornsilk": "#fff8dc",
+				"crimson": "#dc143c",
+				"cyan": "#00ffff",
+				"darkblue": "#00008b",
+				"darkcyan": "#008b8b",
+				"darkgoldenrod": "#b8860b",
+				"darkgray": "#a9a9a9",
+				"darkgreen": "#006400",
+				"darkkhaki": "#bdb76b",
+				"darkmagenta": "#8b008b",
+				"darkolivegreen": "#556b2f",
+				"darkorange": "#ff8c00",
+				"darkorchid": "#9932cc",
+				"darkred": "#8b0000",
+				"darksalmon": "#e9967a",
+				"darkseagreen": "#8fbc8f",
+				"darkslateblue": "#483d8b",
+				"darkslategray": "#2f4f4f",
+				"darkturquoise": "#00ced1",
+				"darkviolet": "#9400d3",
+				"deeppink": "#ff1493",
+				"deepskyblue": "#00bfff",
+				"dimgray": "#696969",
+				"dodgerblue": "#1e90ff",
+				"firebrick": "#b22222",
+				"floralwhite": "#fffaf0",
+				"forestgreen": "#228b22",
+				"fuchsia": "#ff00ff",
+				"gainsboro": "#dcdcdc",
+				"ghostwhite": "#f8f8ff",
+				"gold": "#ffd700",
+				"goldenrod": "#daa520",
+				"gray": "#808080",
+				"green": "#008000",
+				"greenyellow": "#adff2f",
+				"honeydew": "#f0fff0",
+				"hotpink": "#ff69b4",
+				"indianred": "#cd5c5c",
+				"indigo": "#4b0082",
+				"ivory": "#fffff0",
+				"khaki": "#f0e68c",
+				"lavender": "#e6e6fa",
+				"lavenderblush": "#fff0f5",
+				"lawngreen": "#7cfc00",
+				"lemonchiffon": "#fffacd",
+				"lightblue": "#add8e6",
+				"lightcoral": "#f08080",
+				"lightcyan": "#e0ffff",
+				"lightgoldenrodyellow": "#fafad2",
+				"lightgrey": "#d3d3d3",
+				"lightgreen": "#90ee90",
+				"lightpink": "#ffb6c1",
+				"lightsalmon": "#ffa07a",
+				"lightseagreen": "#20b2aa",
+				"lightskyblue": "#87cefa",
+				"lightslategray": "#778899",
+				"lightsteelblue": "#b0c4de",
+				"lightyellow": "#ffffe0",
+				"lime": "#00ff00",
+				"limegreen": "#32cd32",
+				"linen": "#faf0e6",
+				"magenta": "#ff00ff",
+				"maroon": "#800000",
+				"mediumaquamarine": "#66cdaa",
+				"mediumblue": "#0000cd",
+				"mediumorchid": "#ba55d3",
+				"mediumpurple": "#9370d8",
+				"mediumseagreen": "#3cb371",
+				"mediumslateblue": "#7b68ee",
+				"mediumspringgreen": "#00fa9a",
+				"mediumturquoise": "#48d1cc",
+				"mediumvioletred": "#c71585",
+				"midnightblue": "#191970",
+				"mintcream": "#f5fffa",
+				"mistyrose": "#ffe4e1",
+				"moccasin": "#ffe4b5",
+				"navajowhite": "#ffdead",
+				"navy": "#000080",
+				"oldlace": "#fdf5e6",
+				"olive": "#808000",
+				"olivedrab": "#6b8e23",
+				"orange": "#ffa500",
+				"orangered": "#ff4500",
+				"orchid": "#da70d6",
+				"palegoldenrod": "#eee8aa",
+				"palegreen": "#98fb98",
+				"paleturquoise": "#afeeee",
+				"palevioletred": "#d87093",
+				"papayawhip": "#ffefd5",
+				"peachpuff": "#ffdab9",
+				"peru": "#cd853f",
+				"pink": "#ffc0cb",
+				"plum": "#dda0dd",
+				"powderblue": "#b0e0e6",
+				"purple": "#800080",
+				"red": "#ff0000",
+				"rosybrown": "#bc8f8f",
+				"royalblue": "#4169e1",
+				"saddlebrown": "#8b4513",
+				"salmon": "#fa8072",
+				"sandybrown": "#f4a460",
+				"seagreen": "#2e8b57",
+				"seashell": "#fff5ee",
+				"sienna": "#a0522d",
+				"silver": "#c0c0c0",
+				"skyblue": "#87ceeb",
+				"slateblue": "#6a5acd",
+				"slategray": "#708090",
+				"snow": "#fffafa",
+				"springgreen": "#00ff7f",
+				"steelblue": "#4682b4",
+				"tan": "#d2b48c",
+				"teal": "#008080",
+				"thistle": "#d8bfd8",
+				"tomato": "#ff6347",
+				"turquoise": "#40e0d0",
+				"violet": "#ee82ee",
+				"wheat": "#f5deb3",
+				"white": "#ffffff",
+				"whitesmoke": "#f5f5f5",
+				"yellow": "#ffff00",
+				"yellowgreen": "#9acd32"
+			};
+
+			// If it's a named color, transform it into hex
+			if (colors[colorString.toLowerCase()]) {
+				colorString = colors[colorString.toLowerCase()];
+			}
+
+			// Assume hex at this point.
+			if (colorString.charAt(0) == '#') {
+				colorString = colorString.substr(1);
+			}
+
+			var r = parseInt(colorString.charAt(0) + colorString.charAt(1), 16);
+			var g = parseInt(colorString.charAt(2) + colorString.charAt(3), 16);
+			var b = parseInt(colorString.charAt(4) + colorString.charAt(5), 16);
+
+			return new Color(r, g, b);
+		};
+
+		window.Color = Color;
+	})();
+
+	/**
+	 * Plugin to allow the selection of the primary color for the paint canvas.
+	 * @class
+	 */
+	(function() {
+
+		/**
+		 * Constructor.
+		 *
+		 * @param {jQuery object} container - An optional element in which to place the palette. Will be created if none.
+		 * @param {Array} colors - An optional array of colors to include in the palette. Will use defaults if none.
+		 */
+		var ColorPalette = function(container, colors) {
+			if (!colors) {
+				colors = ["black", "gray", "red", "pink", "orange", "yellow", "green", "lime", "blue", "violet", "white"];
+			}
+
+			this.container = container;
+			this.colors = colors;
+
+			this.tiles = [];
+		};
+
+		/**
+		 * Initializes the plugin.
+		 * Creates the palette and binds the events.
+		 *
+		 * @param {Paint} paint - The Paint object registering this plugin.
+		 */
+		ColorPalette.prototype.init = function(paint) {
+			this.paint = paint;
+
+			if (!this.container) {
+				this.container = $('<div class="color-palette clearfix">').insertBefore(this.paint.container);
+			}
+
+			this._createTiles();
+			this._bindEvents();
+
+			// Select the first color
+			this.tiles[0].click();
+		};
+
+		/**
+		 * Creates the color palette tiles and inserts them into the container.
+		 */
+		ColorPalette.prototype._createTiles = function() {
+			for (var i in this.colors) {
+				var tile = $('<div class="color-palette-tile">')
+					.css('background-color', this.colors[i])
+					.data('color', this.colors[i])
+					.appendTo(this.container);
+
+				this.tiles.push(tile);
+			}
+		};
+
+		/**
+		 * Binds the events for the color palette.
+		 * Clicking on a color palette tile selects that color as the paint canvas's primary color.
+		 */
+		ColorPalette.prototype._bindEvents = function() {
+			var self = this;
+			this.container.on('click', '.color-palette-tile', function(e) {
+				self.container.find('.color-palette-tile').removeClass('selected');
+				$(this).addClass('selected');
+
+				var color = Color.fromCssValue($(this).data('color'));
+				self.paint.setPrimaryColor(color);
+			});
+		};
+
+		window.ColorPalette = ColorPalette;
+	})();
+
+	/**
+	 * The FloodFill class encapsulates all the flood fill functionality,
+	 * including the binding of mouse events, and the flood fill itself.
+	 * @class
+	 */
+	(function() {
+
+		/**
+		 * Constructor.
+		 */
+		var FloodFill = function() {};
+
+		/**
+		 * Initializes the plugin.
+		 *
+		 * @param {Paint} paint - The Paint object registering this plugin.
+		 */
+		FloodFill.prototype.init = function(paint) {
+			this.paint = paint;
+			this._bindEvents();
+		};
+
+		/**
+		 * Binds the flood fill events to the container.
+		 *
+		 * Right-clicking on a tile triggers the flood fill, centered at the clicked tile.
+		 */
+		FloodFill.prototype._bindEvents = function() {
+			var self = this;
+
+			// Perform a flood fill when the right mouse button is clicked.
+			this.paint.container.on('contextmenu', '.tile', function(e) {
+				e.preventDefault();
+
+				var tile = self.paint.getTileFromElement(this);
+				self.floodFill(tile);
+			});
+		};
+
+		/**
+		 * Perform the flood fill action.
+		 *
+		 * This function takes a single tile and recursively colors all adjacent tiles of the same color.
+		 * This acts like the "Paint Bucket" tool in Photoshop or MS Paint.
+		 *
+		 * @param {PaintTile} tile - The tile around which to base the flood fill.
+		 */
+		FloodFill.prototype.floodFill = function(tile) {
+			// This is the color of the clicked tile BEFORE the flood. Only
+			// tiles of this color will be flooded.
+			var originalColor = tile.getColor();
+
+			var queue = {};
+			queue[tile.getID()] = tile;
+
+			while (Object.keys(queue).length) {
+				tile = queue[Object.keys(queue)[0]];
+				delete queue[Object.keys(queue)[0]];
+
+				tile.setColor(this.paint.getPrimaryColor());
+
+				var x = tile.getX();
+				var y = tile.getY();
+
+				var left   = this.paint.getTileFromXY(x - 1, y);
+				var right  = this.paint.getTileFromXY(x + 1, y);
+				var top    = this.paint.getTileFromXY(x, y - 1);
+				var bottom = this.paint.getTileFromXY(x, y + 1);
+
+				var neighbors = [left, right, top, bottom];
+
+				for (var i = 0; i < neighbors.length; i++) {
+					var neighbor = neighbors[i];
+					if (neighbor && neighbor.getColor().equals(originalColor)) {
+						queue[neighbor.getID()] = neighbor;
+					}
+				}
+
+			}
+		};
+
+		window.FloodFill = FloodFill;
+	})();
+
+
+	// Start everything once the DOM is ready.
+	$(document).ready(function() {
+		var paint = new Paint($('#tiles'), 90, 90);
+		paint.init();
+
+		paint.registerPlugin('ColorPalette', new ColorPalette());
+		paint.registerPlugin('FloodFill', new FloodFill());
+
+		// For debugging purposes, make the instance available to the console.
+		window.paint = paint;
+	});
+	</script>
+</body>
+</html>

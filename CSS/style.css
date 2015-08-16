@@ -4,6 +4,7 @@ canvas {
 }
 
 body {
+	background-color: rgb(113, 70, 113);
 	margin:0;
 	padding:0;
 	height:100%;

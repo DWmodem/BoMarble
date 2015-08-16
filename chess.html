@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.2/css/bootstrap-theme.min.css" type="text/css" rel="stylesheet">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.2/css/bootstrap.min.css" type="text/css" rel="stylesheet">
+
+	<style type="text/css">
+		.tile-row:first-child .tile {
+			border-top: 1px solid #999;
+		}
+
+		.tile:first-child {
+			border-left: 1px solid #999;
+		}
+
+		.tile {
+			border-right: 1px solid #999;
+			border-bottom: 1px solid #999;
+			display: inline-block;
+			float: left;
+			width: 10px;
+			height: 10px;
+
+			/* Make sure the tiles can't be dragged, since it ruins our own click-and-drag effect. */
+			-moz-user-select: none;
+			-webkit-user-select: none;
+		}
+
+		.color-palette {
+			display: inline-block;
+			margin-bottom: 15px;
+			padding: 10px;
+			background: rgba(0, 0, 150, 0.2);
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		.color-palette-tile {
+			width: 20px;
+			height: 20px;
+			float: left;
+			margin-left: 10px;
+			border: 1px solid black;
+			outline: 2px solid white
+		}
+
+		.color-palette-tile:first-of-type {
+			margin-left: 0;
+		}
+
+		.color-palette-tile.selected {
+			outline-color: rgb(255, 255, 100);
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<h1>Super Awesome Paint Program</h1>
+		<div id="tiles"></div>
+	</div>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.2/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -13,12 +13,19 @@
 
 	<body>
 		<div class="container">
-		  <p>
-		  	<a class="btn btn-primary btn-lg col-sm-4" href="#" role="button">Option 1</a>
-		  	<a class="btn btn-danger btn-lg col-sm-4" href="forestfire.php" role="button">Forest Fire</a>
-		  	<a class="btn btn-warning btn-lg col-sm-4" href="#" role="button">Option 3</a>
-		  </p>
+		  <div class="row">
+			  <div class="col-sm-4">
+				<a class="btn btn-primary btn-lg btn-block" href="#" role="button">Option 1</a>
+			  </div>
+			  <div class="col-sm-4">
+		  		<a class="btn btn-danger btn-lg btn-block" href="forestfire.php" role="button">Forest Fire</a>
+			  </div>
+			  <div class="col-sm-4">
+			  	<a class="btn btn-warning btn-lg btn-block" href="#" role="button">Option 3</a>
+			  </div>
+		  </div>
 		</div>
+
 		<div id="wrapper"></div>
 		<div id="footer"></div>	
 		<script src="../javascript/three.min.js"></script>
