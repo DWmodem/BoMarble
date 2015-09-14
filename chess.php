@@ -130,10 +130,20 @@
 				this.container.on('mouseenter', '.tile', function(e) {
 					console.log("Mouseenter");
 				});
-
 			};
 		})();
 
+	// Start everything once the DOM is ready.
+	$(document).ready(function() {
+		var chess = new Chess($('#tiles'), 80, 80);
+		chess.init();
+
+		chess.registerPlugin('ColorPalette', new ColorPalette());
+		chess.registerPlugin('FloodFill', new FloodFill());
+
+		// For debugging purposes, make the instance available to the console.
+		window.chess = chess;
+	});
 	</script>
 </body>
 </html>
