@@ -1,5 +1,6 @@
 //Render engine
 //Takes care of all things displaying
+console.log("Render file open");
 function RenderEngine(canvas){
 
 	this.canvas = canvas;

@@ -46,8 +46,8 @@
 		<div id="tiles" class="center"></div>
 	</div>
 
-	<script src="../javascript/jquery-2.1.4.min.js"></script>
-	<script src="js/bootstrap.min.js"></script>
+	<script><?php include("../javascript/jquery-2.1.4.min.js");?></script>
+	<script><?php include("js/bootstrap.min.js");?></script>
 	<script>
 	
 		(function(){
@@ -136,7 +136,7 @@
 		 * @param {number} y - The y-coordinate of the tile.
 		 */
 		var ChessTile = function(x, y, color) {
-			this.piece = new ChessPiece("pawn");
+			this.piece = new ChessPiece("pawn", player1);
 			this.$element = $('<div class="tile">');
 			this.$element.prop('id', 'tile-' + x + '-' + y);
 			this.$element.append(this.piece.getElement());
@@ -201,14 +201,6 @@
 			this.$element = '<div class="piece">'+this.pieceValue+'</div>';
 			this.type = type;
 			this.owner = owner;
-			this.pawn = new Pawn();
-			this.rook = new Rook();
-			this.knight = new Knight();
-			this.fool = new Fool();
-			this.king = new King();
-			this.queen = new Queen();
-
-
 		}
 
 		/**
@@ -234,8 +226,8 @@
 		var chess = new Chess($('#tiles'), 8, 8);
 		chess.init();
 
-		chess.registerPlugin('ColorPalette', new ColorPalette());
-		chess.registerPlugin('FloodFill', new FloodFill());
+		//chess.registerPlugin('ColorPalette', new ColorPalette());
+		//chess.registerPlugin('FloodFill', new FloodFill());
 
 		// For debugging purposes, make the instance available to the console.
 		window.chess = chess;

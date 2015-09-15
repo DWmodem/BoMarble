@@ -1,7 +1,7 @@
+<style>
 <?php
-
+	include("css/bootstrap.min.css");
+	include("../CSS/global.css");
 ?>
+</style>style>
 
-<link href="css/bootstrap.min.css" rel="stylesheet">
-<link href="../CSS/global.css" rel="stylesheet" />
-<link href="js/bootstrap.min.js" rel="script" />

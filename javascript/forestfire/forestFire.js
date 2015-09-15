@@ -5,6 +5,7 @@
 //0.01 means event occurs 1% of frames
 //Fire is only applied to trees with a non-zero growth value
 //Fire cannot spawn on empty ground
+		
 
 var GROWTH_RATE = 0.0025;
 var FIRE_RATE = 0.0001;
