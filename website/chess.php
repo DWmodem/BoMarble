@@ -62,7 +62,7 @@
 
 				this.container = $(container);
 
-				this.tilesByXY = [];
+				this.tilesByXY = [];	// <-- Board in memory.
 				this.tilesByID = {};
 
 				this.width = width;
@@ -120,9 +120,27 @@
 
 				
 				this.container.on('mouseenter', '.tile', function(e) {
+					var id = $(this).prop("id");
+					id = id.replace(/[tile-]/g, '');
 					console.log("Mouseenter");
-				});
+					console.log(id);
+					tile = self.getTile(id.charAt(0), id.charAt(1));
+					console.log(tile.piece);
+				} );
 			};
+
+			Chess.prototype.putPiece = function(owner, archetype, x, y){
+				tile = this.getTile(x, y);
+				type = new archetype(tile, owner);
+				console.log(type);
+				piece = new ChessPiece(type, owner);
+				tile.setPiece(piece);
+			};
+
+			Chess.prototype.getTile = function(x, y){
+				return this.tilesByXY[x][y];
+			};
+
 			window.Chess = Chess;
 		})();
 
@@ -136,14 +154,35 @@
 		 * @param {number} y - The y-coordinate of the tile.
 		 */
 		var ChessTile = function(x, y, color) {
-			this.piece = new ChessPiece("pawn", player1);
+			this.piece = null;
 			this.$element = $('<div class="tile">');
 			this.$element.prop('id', 'tile-' + x + '-' + y);
-			this.$element.append(this.piece.getElement());
 			this.x = x;
 			this.y = y;
 
 			this.setColor(color);
+		}
+		/**
+		 * @returns {bool} true if the tile has no piece in it. False if it does.
+		 */
+		ChessTile.prototype.isEmpty = function() {
+			return (this.piece == null);
+		}
+		/**
+		 * @returns {bool} 
+		 */
+		ChessTile.prototype.hasDiffOwner = function(otherTile) {
+			return !(this.getOwner() == otherTile.getOwner());
+		}
+
+		/**
+		 * @returns {player} The player that owns this tile.
+		 */
+		ChessTile.prototype.getOwner = function() {
+			if(this.isEmpty()){
+				return null;
+			}
+			return this.piece.owner;
 		}
 
 		/**
@@ -191,16 +230,23 @@
 			this.$element[0].style.backgroundColor = color;
 		};
 
+		ChessTile.prototype.setPiece = function(piece) {
+			this.piece = piece;
+			this.$element.append(this.piece.getElement());
+			return;
+		};
+
 		window.ChessTile = ChessTile;
 	})();
 
 		(function() {
 
 		var ChessPiece = function(type, owner) {
-			this.pieceValue = "&#9817";
-			this.$element = '<div class="piece">'+this.pieceValue+'</div>';
 			this.type = type;
+			this.$element = '<div class="piece">'+this.type.getAppearance()+'</div>';
 			this.owner = owner;
+			this.validMoves = [];
+			this.validEats = [];
 		}
 
 		/**
@@ -220,17 +266,101 @@
 		window.ChessPiece = ChessPiece;
 	})();
 
+		(function() {
+
+		var Rook = function(tile, owner) {
+			this.validMoves = [];
+			this.validEats = [];
+			this.board = window.chess.tilesByXY;
+			this.width = window.chess.width;
+			this.height = window.chess.height;
+			this.appearance = "&#9814";
+			this.tilex = 0;
+			this.tiley = 0;
+			this.owner = owner;
+			this.setTile(tile);
+		}
+
+		Rook.prototype.setTile = function(tile){
+			this.tilex = tile.getX();
+			this.tiley = tile.getY();
+		}
+
+		Rook.prototype.calculateValidMoves = function(){
+			newMoves = [];
+			newEats = [];
+			var i = 0;
+			var j = 0;
+			////Top to botto, ////
+			//column! the higher the i the lower the case
+			//from piece to bottom of board
+			for(i = tiley; i < height; i++){
+				if(board[tilex][i].isEmpty()){		//If the tile is empty
+					newMoves.push([tilex, i]);
+
+				} else {
+					if(board[tilex][i].hasDiffOwner(tile)){
+						newEats.push([tilex, i]); //add the piece if it is an enemy piece
+					}
+					break;	//Do not continue, rooks cannot eat past pieces.
+				}
+			}
+			//from piece to top of board
+			for(i = tiley; i >= 0; i--){
+				if(board[tilex][i].isEmpty()){
+					newMoves.push([tilex, i]);
+
+				} else {
+					if(board[tilex][i].hasDiffOwner(tile)){
+						newEats.push([tilex, i]); //add the piece if it is an enemy piece
+					}
+					break;	//Do not continue, rooks cannot eat past pieces.
+				}
+			}
+			//// sideways ////
+			//Going to the right of the piece
+			for(j = tilex; j < width; j++){
+				if(board[tiley][j].isEmpty()){		//If the tile is empty
+					newMoves.push([j, tiley]);
+				} else {
+					if(board[tiley][j].hasDiffOwner()){
+						newEats.push([j, tiley]);
+					}
+					break;
+				}
+			}
+			//Going to the left of the piece
+			for(j = tilex; j < 0; j--){
+				if(board[tiley][j].isEmpty()){		//If the tile is empty
+					newMoves.push([j, tiley]);
+				} else {
+					if(board[tiley][j].hasDiffOwner()){
+						newEats.push([j, tiley]);
+					}
+					break;
+				}
+			}
+		}
+		Rook.prototype.getAppearance = function(){
+			return this.appearance;
+		}
+
+		window.Rook = Rook;
+	})();
+
 	// Start everything once the DOM is ready.
 	$(document).ready(function() {
+		var player1 = [];
+		var player2 = [];
 		console.log("We have a chess gentlemen.");
 		var chess = new Chess($('#tiles'), 8, 8);
 		chess.init();
-
 		//chess.registerPlugin('ColorPalette', new ColorPalette());
 		//chess.registerPlugin('FloodFill', new FloodFill());
 
 		// For debugging purposes, make the instance available to the console.
 		window.chess = chess;
+		chess.putPiece(player1, Rook, 3, 4);
 	});
 	</script>
 </body>
