@@ -60,6 +60,11 @@
 			 */
 			var Chess = function(container, width, height){
 
+				//Quick definition of the colors.
+				this.highlightGreen = "#66CC66";
+				this.blackTile = "lightgrey";
+				this.whiteTile = "white";
+
 				this.container = $(container);
 
 				this.tilesByXY = [];	// <-- Board in memory.
@@ -70,7 +75,29 @@
 
 				this.plugins = {};
 			}
-
+			Chess.prototype.gameStart = function() {
+				console.log("game start");
+				this.recalculateAllMoves();
+				
+			};
+			
+			Chess.prototype.recalculateAllMoves = function() {
+				console.log("recalculateAllMoves");
+				board = this.tilesByXY;
+				console.log(board);
+				console.log(board.length);
+				for(var x = 0; x < board.length; x++){
+					for(var y = 0; y < board[x].length; y++){
+						piece = board[x][y].getPiece();
+						console.log(piece);
+						if(piece != null){
+							console.log("calculating move for: "+piece);
+							piece.calculateMoves();
+						}
+					}
+				}
+				console.log("done calculating moves");
+			};			
 			/**
 			 * Intializes the Chess Board
 			 *
@@ -88,7 +115,7 @@
 			Chess.prototype._createTiles = function(alternateColors) {
 				
 				if(alternateColors == null){
-					alternateColors = ["white", "lightgrey"];
+					alternateColors = [this.whiteTile, this.blackTile];
 				}
 
 				for (var y = 0; y < this.width; y++) {
@@ -118,15 +145,32 @@
 			Chess.prototype._bindEvents = function() {
 				var self = this;
 
-				
 				this.container.on('mouseenter', '.tile', function(e) {
 					var id = $(this).prop("id");
 					id = id.replace(/[tile-]/g, '');
+
 					console.log("Mouseenter");
 					console.log(id);
+
 					tile = self.getTile(id.charAt(0), id.charAt(1));
-					console.log(tile.piece);
-				} );
+					piece = self.getPiece(id.charAt(0), id.charAt(1));
+					self.highlightMoves(piece);
+					console.log(piece);
+					console.log(tile);
+				});
+
+				this.container.on('mouseleave', '.tile', function(e) {
+					var id = $(this).prop("id");
+					id = id.replace(/[tile-]/g, '');
+
+					console.log("Mouseleave");
+
+					tile = self.getTile(id.charAt(0), id.charAt(1));
+					piece = self.getPiece(id.charAt(0), id.charAt(1));
+					self.revertHighlights(piece);
+					console.log(piece);
+					console.log(tile);
+				});
 			};
 
 			Chess.prototype.putPiece = function(owner, archetype, x, y){
@@ -141,6 +185,45 @@
 				return this.tilesByXY[x][y];
 			};
 
+			Chess.prototype.getPiece = function(x, y){
+				return this.getTile(x, y).getPiece();
+			};
+			
+			//Moves is an array of tuples. the first element is x, and the second y.
+			Chess.prototype.highlightMoves = function(piece){
+				
+				if(piece == null){
+					console.log("Piece is null");
+					return;
+				}
+
+				moves = piece.getValidMoves();
+				console.log("got valid moves. Length: "+moves.length);
+				for(var i = 0; i < moves.length; i++){
+					var hx = moves[i][0];	// <--- moves[i] is the tuple. moves[i][0] is the x
+					var hy = moves[i][1];
+					console.log("Setting "+hx+", "+hy+" to higlightgreen");
+				this.tilesByXY[hx][hy].setColor(this.highlightGreen);
+				}
+			};
+			
+			Chess.prototype.revertHighlights = function(piece){
+				
+				if(piece == null){
+					console.log("Piece is null");
+					return;
+				}
+
+				moves = piece.getValidMoves();
+				console.log("got valid moves. Length: "+moves.length);
+				for(var i = 0; i < moves.length; i++){
+					var hx = moves[i][0];	// <--- moves[i] is the tuple. moves[i][0] is the x
+					var hy = moves[i][1];
+					console.log("Setting "+hx+", "+hy+" to higlightgreen");
+					this.tilesByXY[hx][hy].setPrevColor();
+					
+				}
+			};			
 			window.Chess = Chess;
 		})();
 
@@ -159,13 +242,19 @@
 			this.$element.prop('id', 'tile-' + x + '-' + y);
 			this.x = x;
 			this.y = y;
-
+			this.previousColor = color;	//We need to remember the color. We change it when pieces move.
 			this.setColor(color);
 		}
 		/**
 		 * @returns {bool} true if the tile has no piece in it. False if it does.
 		 */
 		ChessTile.prototype.isEmpty = function() {
+			console.log("Is empty? "+this.piece);
+			if(this.piece == null){
+				console.log("Yes!");
+			} else {
+				console.log("No!");
+			}
 			return (this.piece == null);
 		}
 		/**
@@ -180,7 +269,7 @@
 		 */
 		ChessTile.prototype.getOwner = function() {
 			if(this.isEmpty()){
-				return null;
+				return [];
 			}
 			return this.piece.owner;
 		}
@@ -230,11 +319,20 @@
 			this.$element[0].style.backgroundColor = color;
 		};
 
+		ChessTile.prototype.setPrevColor = function(){
+			this.color = this.previousColor;
+			this.$element[0].style.backgroundColor = this.color;
+		};
+
 		ChessTile.prototype.setPiece = function(piece) {
 			this.piece = piece;
 			this.$element.append(this.piece.getElement());
 			return;
 		};
+		
+		ChessTile.prototype.getPiece = function() {
+			return this.piece;
+		};		
 
 		window.ChessTile = ChessTile;
 	})();
@@ -247,6 +345,9 @@
 			this.owner = owner;
 			this.validMoves = [];
 			this.validEats = [];
+
+			this.type.setPiece(this);
+			this.type.calculateValidMoves();
 		}
 
 		/**
@@ -256,11 +357,12 @@
 			return this.$element;
 		}
 
-		/**
-		 * @returns {HTMLElement} The HTMLElement that this tile wraps.
-		 */
-		ChessPiece.prototype.getElementHTML = function() {
-			return this.elementHTML;
+		ChessPiece.prototype.calculateMoves = function() {
+			this.type.calculateValidMoves();
+		}
+		
+		ChessPiece.prototype.getValidMoves = function() {
+			return this.validMoves;
 		}
 
 		window.ChessPiece = ChessPiece;
@@ -268,7 +370,7 @@
 
 		(function() {
 
-		var Rook = function(tile, owner) {
+		var Rook = function(tile, piece, owner) {
 			this.validMoves = [];
 			this.validEats = [];
 			this.board = window.chess.tilesByXY;
@@ -285,62 +387,85 @@
 			this.tilex = tile.getX();
 			this.tiley = tile.getY();
 		}
+		Rook.prototype.setPiece = function(piece){
+			this.piece = piece;
+		}
 
 		Rook.prototype.calculateValidMoves = function(){
 			newMoves = [];
 			newEats = [];
 			var i = 0;
 			var j = 0;
-			////Top to botto, ////
-			//column! the higher the i the lower the case
-			//from piece to bottom of board
-			for(i = tiley; i < height; i++){
-				if(board[tilex][i].isEmpty()){		//If the tile is empty
-					newMoves.push([tilex, i]);
+			tiley = this.tiley;
+			tilex = this.tilex;
+			height = this.height;
+			width = this.width;
+			board = this.board;
+			rookleft = function(){
+				for(j = tilex-1; j >= 0; j--){
+					if(board[j][tiley].isEmpty()){		//If the tile is empty
+						newMoves.push([j, tiley]);
+					} else {
+						if(board[j][tiley].hasDiffOwner(tile)){
+							newEats.push([j, tiley]);
+						}
+						break;
+					}
+				}
+			}
 
-				} else {
-					if(board[tilex][i].hasDiffOwner(tile)){
-						newEats.push([tilex, i]); //add the piece if it is an enemy piece
+			rookright = function(){
+				for(j = tilex+1; j < width; j++){
+					if(board[j][tiley].isEmpty()){		//If the tile is empty
+						console.log("Is it empty? j ="+j+" tiley="+tiley);
+						console.log(board[j][tiley]);
+						newMoves.push([j, tiley]);
+					} else {
+						if(board[j][tiley].hasDiffOwner(tile)){
+							newEats.push([j, tiley]);
+						}
+						break;
 					}
-					break;	//Do not continue, rooks cannot eat past pieces.
 				}
 			}
-			//from piece to top of board
-			for(i = tiley; i >= 0; i--){
-				if(board[tilex][i].isEmpty()){
-					newMoves.push([tilex, i]);
 
-				} else {
-					if(board[tilex][i].hasDiffOwner(tile)){
-						newEats.push([tilex, i]); //add the piece if it is an enemy piece
+			rookup = function(){
+				for(i = tiley-1; i >= 0; i--){
+					if(board[tilex][i].isEmpty()){
+						newMoves.push([tilex, i]);
+
+					} else {
+						if(board[tilex][i].hasDiffOwner(tile)){
+							newEats.push([tilex, i]); //add the piece if it is an enemy piece
+						}
+						break;	//Do not continue, rooks cannot eat past pieces.
 					}
-					break;	//Do not continue, rooks cannot eat past pieces.
 				}
 			}
-			//// sideways ////
-			//Going to the right of the piece
-			for(j = tilex; j < width; j++){
-				if(board[tiley][j].isEmpty()){		//If the tile is empty
-					newMoves.push([j, tiley]);
-				} else {
-					if(board[tiley][j].hasDiffOwner()){
-						newEats.push([j, tiley]);
+
+			rookdown = function(){
+				for(i = tiley+1; i < height; i++){
+					if(board[tilex][i].isEmpty()){		//If the tile is empty
+						newMoves.push([tilex, i]);
+
+					} else {
+						if(board[tilex][i].hasDiffOwner(tile)){
+							newEats.push([tilex, i]); //add the piece if it is an enemy piece
+						}
+						break;	//Do not continue, rooks cannot eat past pieces.
 					}
-					break;
 				}
 			}
-			//Going to the left of the piece
-			for(j = tilex; j < 0; j--){
-				if(board[tiley][j].isEmpty()){		//If the tile is empty
-					newMoves.push([j, tiley]);
-				} else {
-					if(board[tiley][j].hasDiffOwner()){
-						newEats.push([j, tiley]);
-					}
-					break;
-				}
-			}
+			rookleft();
+			rookup();
+			rookdown();
+			rookright();
+
+			console.log(newMoves);
+			this.piece.validMoves = newMoves;
+			this.piece.validEats = newEats;
 		}
+
 		Rook.prototype.getAppearance = function(){
 			return this.appearance;
 		}
@@ -350,8 +475,8 @@
 
 	// Start everything once the DOM is ready.
 	$(document).ready(function() {
-		var player1 = [];
-		var player2 = [];
+		var player1 = [foo = "foo"];
+		var player2 = [bar = "bar"];
 		console.log("We have a chess gentlemen.");
 		var chess = new Chess($('#tiles'), 8, 8);
 		chess.init();
@@ -360,7 +485,12 @@
 
 		// For debugging purposes, make the instance available to the console.
 		window.chess = chess;
+		chess.putPiece(player2, Rook, 1, 6);
 		chess.putPiece(player1, Rook, 3, 4);
+		chess.putPiece(player1, Rook, 6, 1);
+		chess.putPiece(player1, Rook, 3, 6);
+		chess.putPiece(player1, Rook, 6, 4);
+		chess.gameStart();
 	});
 	</script>
 </body>
