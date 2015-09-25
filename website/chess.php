@@ -63,6 +63,7 @@
 				//Quick definition of the colors.
 				this.highlightGreen = "#66FF99";
 				this.highlightYellow = "#CCCC66";
+				this.selectionBlue = "lightblue";
 				this.blackTile = "lightgrey";
 				this.whiteTile = "white";
 
@@ -74,12 +75,16 @@
 				this.width = width;
 				this.height = height;
 
+				this.white;
+				this.black;
+				this.activePlayer;
+
 				this.plugins = {};
 			}
-			Chess.prototype.gameStart = function() {
+			Chess.prototype.gameStart = function(white, black) {
 				console.log("game start");
 				this.recalculateAllMoves();
-				
+				this.activePlayer = white;
 			};
 			
 			Chess.prototype.recalculateAllMoves = function() {
@@ -97,7 +102,15 @@
 						}
 					}
 				}
-			};			
+			};
+
+			Chess.prototype.setActivePlayer = function(player){
+
+				this.activePlayer.setTurn(false);
+				this.activePlayer = player;
+				this.activePlayer.setTurn(true);
+
+			}		
 			/**
 			 * Intializes the Chess Board
 			 *
@@ -145,28 +158,73 @@
 			Chess.prototype._bindEvents = function() {
 				var self = this;
 
+				//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Controls the mouseovers
 				this.container.on('mouseenter', '.tile', function(e) {
 					var id = $(this).prop("id");
 					id = id.replace(/[tile-]/g, '');
 					console.log("Mouseenter");
 					console.log(id);
-					tile = self.getTile(id.charAt(0), id.charAt(1));
-					piece = self.getPiece(id.charAt(0), id.charAt(1));
-					self.highlightMoves(piece);
-					self.highlightEats(piece);
+					var tile = self.getTile(id.charAt(0), id.charAt(1));
+					var piece = self.getPiece(id.charAt(0), id.charAt(1));
+
+					//Don't bother for empty tiles
+					if(piece == null){
+						return;
+					}
+					//Only highlight your own pieces
+					//Only highlight pieces if activePlayer has no selection made
+					if((self.activePlayer == piece.getOwner()) && (piece.getOwner().getSelection() == null)) {
+						self.highlightMoves(piece);
+						self.highlightEats(piece);
+					}
 				});
 
 				this.container.on('mouseleave', '.tile', function(e) {
+					
+					if(self.activePlayer.hasSelection()){
+						return;
+					}
+
 					var id = $(this).prop("id");
 					id = id.replace(/[tile-]/g, '');
 
 					console.log("Mouseleave");
 
-					tile = self.getTile(id.charAt(0), id.charAt(1));
-					piece = self.getPiece(id.charAt(0), id.charAt(1));
-					self.revertHighlights(piece);
-					console.log(piece);
-					console.log(tile);
+					var tile = self.getTile(id.charAt(0), id.charAt(1));
+					var piece = self.getPiece(id.charAt(0), id.charAt(1));
+
+					//Only revertHighlight your own pieces
+					//Only revertHighlight pieces if activePlayer has no selection made (Nothing should happen when a selection is made!!!)
+					if((self.activePlayer == piece.getOwner()) && (piece.getOwner().getSelection() == null)) {
+						self.revertHighlights(piece);
+					}
+
+				});
+				//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Controls the mouseovers
+
+				this.container.on('click', '.tile', function(e) {
+					var id = $(this).prop("id");
+					id = id.replace(/[tile-]/g, '');
+
+					var piece = self.getPiece(id.charAt(0), id.charAt(1));
+					var owner = piece.getOwner();
+
+					//Selection
+					if(self.activePlayer == owner && (self.activePlayer.getSelection() != piece)) {		//If the active player owns this piece, and the player hasn't already selected this piece
+						self.revertSelectionHighlight(self.activePlayer.getSelection());
+						self.revertHighlights(self.activePlayer.getSelection());
+
+						self.activePlayer.deselect();
+						self.activePlayer.selectPiece(piece);
+						self.selectionHighlight(piece);
+						self.highlightMoves(piece);
+						self.highlightEats(piece);
+
+					//Deselection.
+					} else if(self.activePlayer.getSelection() == piece){	//If the active player has this piece as her selection
+						self.activePlayer.deselect();
+						self.revertSelectionHighlight(piece);
+					}
 				});
 			};
 
@@ -190,6 +248,10 @@
 				return this.getTile(x, y).getPiece();
 			};
 			
+			Chess.prototype.getOwner = function(x, y){
+				return this.getTile(x, y).getPiece().getOwner();
+			};
+
 			//Moves is an array of tuples. the first element is x, and the second y.
 			Chess.prototype.highlightMoves = function(piece){
 				
@@ -204,7 +266,7 @@
 					var hx = moves[i][0];	// <--- moves[i] is the tuple. moves[i][0] is the x
 					var hy = moves[i][1];
 					console.log("Setting "+hx+", "+hy+" to green");
-				this.tilesByXY[hx][hy].setColor(this.highlightGreen);
+					this.tilesByXY[hx][hy].setColor(this.highlightGreen);
 				}
 			};
 
@@ -221,9 +283,19 @@
 					var hx = moves[i][0];	// <--- moves[i] is the tuple. moves[i][0] is the x
 					var hy = moves[i][1];
 					console.log("Setting "+hx+", "+hy+" to yellow");
-				this.tilesByXY[hx][hy].setColor(this.highlightYellow);
+					this.tilesByXY[hx][hy].setColor(this.highlightYellow);
 				}
-			};			
+			};
+
+			Chess.prototype.selectionHighlight = function(piece){
+					this.tilesByXY[piece.getX()][piece.getY()].setBorderStyle(this.selectionBlue);
+			}
+
+			Chess.prototype.revertSelectionHighlight = function(piece){
+				if(!(piece == null)){
+					this.tilesByXY[piece.getX()][piece.getY()].revertBorderStyle();
+				}
+			}
 			Chess.prototype.revertHighlights = function(piece){
 				
 				if(piece == null){
@@ -261,6 +333,7 @@
 			this.x = x;
 			this.y = y;
 			this.previousColor = color;	//We need to remember the color. We change it when pieces move.
+			this.previousStyle = [];
 			this.setColor(color);
 		}
 		/**
@@ -336,16 +409,17 @@
 			this.$element[0].style.backgroundColor = color;
 		};
 
+
 		ChessTile.prototype.setBorderStyle = function(color) {
-			this.$element[0].style.borderColor = color;
+			this.$element[0].style.backgroundColor = color;
 		};
 		
-		ChessTile.prototype.revertBorderStyle = function(color) {
-			this.$element[0].style.borderColor = color;
+		ChessTile.prototype.revertBorderStyle = function() {
+			this.$element[0].style.backgroundColor = this.previousColor;
 		};
+
 		ChessTile.prototype.setPrevColor = function(){
-			this.color = this.previousColor;
-			this.$element[0].style.backgroundColor = this.color;
+			this.$element[0].style.backgroundColor = this.previousColor;
 		};
 
 		ChessTile.prototype.setPiece = function(piece) {
@@ -392,6 +466,18 @@
 		ChessPiece.prototype.getValidEats = function() {
 			return this.validEats;
 		}
+
+		ChessPiece.prototype.getOwner = function() {
+			return this.owner;
+		}
+
+		ChessPiece.prototype.getX = function(){
+			return this.type.tilex;	
+		}
+
+		ChessPiece.prototype.getY = function(){
+			return this.type.tiley;
+		}		
 		window.ChessPiece = ChessPiece;
 	})();
 
@@ -504,9 +590,25 @@
 
 (function() {
 
-		var Player = function(id, pieces){
+		var Player = function(id, piecesMien){
 			this.id = id;
-			this.pieceSet = pieces;
+			this.pieceSetMien = piecesMien;
+			this.activePieces = [];
+			this.selection = null;	//Needs to be null at times.
+			this.turn = false;
+		}
+
+		Player.prototype.selectPiece = function(piece){
+				this.selection = piece;
+				console.log("Piece selected.");
+		}
+
+		Player.prototype.getSelection = function(){
+			return this.selection;
+		}
+
+		Player.prototype.deselect = function(){
+			this.selection = null;
 		}
 
 		Player.prototype.getID = function(){
@@ -514,9 +616,44 @@
 		}
 
 		Player.prototype.getRookMien = function(){
-			return this.pieceSet["rook"];
+			return this.pieceSetMien["rook"];
 		}
 		
+		Player.prototype.getKnightMien = function(){
+			return this.pieceSetMien["rook"];
+		}
+		
+		Player.prototype.getFoolMien = function(){
+			return this.pieceSetMien["rook"];
+		}
+		
+		Player.prototype.getQueenMien = function(){
+			return this.pieceSetMien["rook"];
+		}
+		
+		Player.prototype.getKingMien = function(){
+			return this.pieceSetMien["rook"];
+		}
+
+		Player.prototype.getPawnMien = function(){
+			return this.pieceSetMien["rook"];
+		}
+
+		Player.prototype.addActivePiece = function(piece){
+			this.activePieces.push(piece);
+		}
+
+		Player.prototype.hasSelection = function(){
+			return !(this.selection == null);
+		}
+
+		Player.prototype.setTurn = function(isTurn){
+			this.turn = isTurn;
+		}
+
+		Player.prototype.isTurn = function(){
+			return this.turn;
+		}
 		window.Player = Player;
 	})();
 
@@ -524,7 +661,6 @@
 	$(document).ready(function() {
 		var player1 = new Player("54F63E2895623478", {rook: "&#9814"});
 		var player2 = new Player("spoopy", {rook: "&#9820"});
-
 
 		console.log("We have a chess gentlemen.");
 		var chess = new Chess($('#tiles'), 8, 8);
@@ -539,8 +675,8 @@
 		chess.putPiece(player2, Rook, 3, 1);
 		chess.putPiece(player1, Rook, 3, 4);
 		chess.putPiece(player1, Rook, 6, 1);
-		chess.putPiece(player1, Rook, 3, 6);
-		chess.gameStart();
+		chess.putPiece(player2, Rook, 3, 6);
+		chess.gameStart(player1, player2);
 	});
 	</script>
 </body>
