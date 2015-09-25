@@ -42,7 +42,7 @@
 
 <body>
 	<div class="container">
-		<h1>So you think you can chess?</h1>
+		<h1></h1>
 		<div id="tiles" class="center"></div>
 	</div>
 
@@ -61,7 +61,8 @@
 			var Chess = function(container, width, height){
 
 				//Quick definition of the colors.
-				this.highlightGreen = "#66CC66";
+				this.highlightGreen = "#66FF99";
+				this.highlightYellow = "#CCCC66";
 				this.blackTile = "lightgrey";
 				this.whiteTile = "white";
 
@@ -82,7 +83,6 @@
 			};
 			
 			Chess.prototype.recalculateAllMoves = function() {
-				console.log("recalculateAllMoves");
 				board = this.tilesByXY;
 				console.log(board);
 				console.log(board.length);
@@ -91,12 +91,12 @@
 						piece = board[x][y].getPiece();
 						console.log(piece);
 						if(piece != null){
-							console.log("calculating move for: "+piece);
 							piece.calculateMoves();
+							console.log("("+x+", "+y+") valid moves: "+piece.getValidMoves());
+							console.log("("+x+", "+y+") valid eats: "+piece.getValidEats());
 						}
 					}
 				}
-				console.log("done calculating moves");
 			};			
 			/**
 			 * Intializes the Chess Board
@@ -148,15 +148,12 @@
 				this.container.on('mouseenter', '.tile', function(e) {
 					var id = $(this).prop("id");
 					id = id.replace(/[tile-]/g, '');
-
 					console.log("Mouseenter");
 					console.log(id);
-
 					tile = self.getTile(id.charAt(0), id.charAt(1));
 					piece = self.getPiece(id.charAt(0), id.charAt(1));
 					self.highlightMoves(piece);
-					console.log(piece);
-					console.log(tile);
+					self.highlightEats(piece);
 				});
 
 				this.container.on('mouseleave', '.tile', function(e) {
@@ -174,11 +171,15 @@
 			};
 
 			Chess.prototype.putPiece = function(owner, archetype, x, y){
+				console.log("~~~put piece~~~");
+				console.log("Owner: "+owner.id);
 				tile = this.getTile(x, y);
 				type = new archetype(tile, owner);
+				console.log("Type Owner: "+type.owner.id);
 				console.log(type);
 				piece = new ChessPiece(type, owner);
 				tile.setPiece(piece);
+				console.log("~~~put piece~~~");
 			};
 
 			Chess.prototype.getTile = function(x, y){
@@ -202,11 +203,27 @@
 				for(var i = 0; i < moves.length; i++){
 					var hx = moves[i][0];	// <--- moves[i] is the tuple. moves[i][0] is the x
 					var hy = moves[i][1];
-					console.log("Setting "+hx+", "+hy+" to higlightgreen");
+					console.log("Setting "+hx+", "+hy+" to green");
 				this.tilesByXY[hx][hy].setColor(this.highlightGreen);
 				}
 			};
-			
+
+			Chess.prototype.highlightEats = function(piece){
+				
+				if(piece == null){
+					console.log("Piece is null");
+					return;
+				}
+
+				moves = piece.getValidEats();
+				console.log("got valid eats. Length: "+moves.length);
+				for(var i = 0; i < moves.length; i++){
+					var hx = moves[i][0];	// <--- moves[i] is the tuple. moves[i][0] is the x
+					var hy = moves[i][1];
+					console.log("Setting "+hx+", "+hy+" to yellow");
+				this.tilesByXY[hx][hy].setColor(this.highlightYellow);
+				}
+			};			
 			Chess.prototype.revertHighlights = function(piece){
 				
 				if(piece == null){
@@ -215,11 +232,12 @@
 				}
 
 				moves = piece.getValidMoves();
+				eats = piece.getValidEats();
+				moves = moves.concat(eats);
 				console.log("got valid moves. Length: "+moves.length);
 				for(var i = 0; i < moves.length; i++){
 					var hx = moves[i][0];	// <--- moves[i] is the tuple. moves[i][0] is the x
 					var hy = moves[i][1];
-					console.log("Setting "+hx+", "+hy+" to higlightgreen");
 					this.tilesByXY[hx][hy].setPrevColor();
 					
 				}
@@ -249,19 +267,18 @@
 		 * @returns {bool} true if the tile has no piece in it. False if it does.
 		 */
 		ChessTile.prototype.isEmpty = function() {
-			console.log("Is empty? "+this.piece);
-			if(this.piece == null){
-				console.log("Yes!");
-			} else {
-				console.log("No!");
-			}
 			return (this.piece == null);
 		}
 		/**
 		 * @returns {bool} 
 		 */
 		ChessTile.prototype.hasDiffOwner = function(otherTile) {
-			return !(this.getOwner() == otherTile.getOwner());
+			console.log("Tile: x="+tile.x+" y="+tile.y);
+			console.log("otherTile: x="+otherTile.x+" y="+otherTile.y);
+			console.log("Owner 1: "+this.getOwner().id);
+			console.log("Owner 2: "+otherTile.getOwner().id);
+			console.log("has diff owner? return "+!(this.getOwner().id == otherTile.getOwner().id));
+			return !(this.getOwner().id == otherTile.getOwner().id);
 		}
 
 		/**
@@ -319,6 +336,13 @@
 			this.$element[0].style.backgroundColor = color;
 		};
 
+		ChessTile.prototype.setBorderStyle = function(color) {
+			this.$element[0].style.borderColor = color;
+		};
+		
+		ChessTile.prototype.revertBorderStyle = function(color) {
+			this.$element[0].style.borderColor = color;
+		};
 		ChessTile.prototype.setPrevColor = function(){
 			this.color = this.previousColor;
 			this.$element[0].style.backgroundColor = this.color;
@@ -365,22 +389,26 @@
 			return this.validMoves;
 		}
 
+		ChessPiece.prototype.getValidEats = function() {
+			return this.validEats;
+		}
 		window.ChessPiece = ChessPiece;
 	})();
 
 		(function() {
 
-		var Rook = function(tile, piece, owner) {
+		var Rook = function(tile, owner) {
 			this.validMoves = [];
 			this.validEats = [];
 			this.board = window.chess.tilesByXY;
 			this.width = window.chess.width;
 			this.height = window.chess.height;
-			this.appearance = "&#9814";
+			this.appearance = owner.getRookMien();
 			this.tilex = 0;
 			this.tiley = 0;
 			this.owner = owner;
 			this.setTile(tile);
+			this.tile = tile;
 		}
 
 		Rook.prototype.setTile = function(tile){
@@ -406,7 +434,8 @@
 					if(board[j][tiley].isEmpty()){		//If the tile is empty
 						newMoves.push([j, tiley]);
 					} else {
-						if(board[j][tiley].hasDiffOwner(tile)){
+						if(board[j][tiley].hasDiffOwner(chess.getTile(tilex, tiley))){
+							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+j+") is an edible piece");
 							newEats.push([j, tiley]);
 						}
 						break;
@@ -417,11 +446,10 @@
 			rookright = function(){
 				for(j = tilex+1; j < width; j++){
 					if(board[j][tiley].isEmpty()){		//If the tile is empty
-						console.log("Is it empty? j ="+j+" tiley="+tiley);
-						console.log(board[j][tiley]);
 						newMoves.push([j, tiley]);
 					} else {
-						if(board[j][tiley].hasDiffOwner(tile)){
+						if(board[j][tiley].hasDiffOwner(chess.getTile(tilex, tiley))){
+							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+j+") is an edible piece");
 							newEats.push([j, tiley]);
 						}
 						break;
@@ -435,7 +463,8 @@
 						newMoves.push([tilex, i]);
 
 					} else {
-						if(board[tilex][i].hasDiffOwner(tile)){
+						if(board[tilex][i].hasDiffOwner(chess.getTile(tilex, tiley))){
+							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+i+") is an edible piece");
 							newEats.push([tilex, i]); //add the piece if it is an enemy piece
 						}
 						break;	//Do not continue, rooks cannot eat past pieces.
@@ -449,7 +478,8 @@
 						newMoves.push([tilex, i]);
 
 					} else {
-						if(board[tilex][i].hasDiffOwner(tile)){
+						if(board[tilex][i].hasDiffOwner(chess.getTile(tilex, tiley))){
+							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+i+") is an edible piece");
 							newEats.push([tilex, i]); //add the piece if it is an enemy piece
 						}
 						break;	//Do not continue, rooks cannot eat past pieces.
@@ -461,7 +491,6 @@
 			rookdown();
 			rookright();
 
-			console.log(newMoves);
 			this.piece.validMoves = newMoves;
 			this.piece.validEats = newEats;
 		}
@@ -473,10 +502,30 @@
 		window.Rook = Rook;
 	})();
 
+(function() {
+
+		var Player = function(id, pieces){
+			this.id = id;
+			this.pieceSet = pieces;
+		}
+
+		Player.prototype.getID = function(){
+			return this.id;
+		}
+
+		Player.prototype.getRookMien = function(){
+			return this.pieceSet["rook"];
+		}
+		
+		window.Player = Player;
+	})();
+
 	// Start everything once the DOM is ready.
 	$(document).ready(function() {
-		var player1 = [foo = "foo"];
-		var player2 = [bar = "bar"];
+		var player1 = new Player("54F63E2895623478", {rook: "&#9814"});
+		var player2 = new Player("spoopy", {rook: "&#9820"});
+
+
 		console.log("We have a chess gentlemen.");
 		var chess = new Chess($('#tiles'), 8, 8);
 		chess.init();
@@ -485,11 +534,12 @@
 
 		// For debugging purposes, make the instance available to the console.
 		window.chess = chess;
+		chess.putPiece(player1, Rook, 1, 4);
 		chess.putPiece(player2, Rook, 1, 6);
+		chess.putPiece(player2, Rook, 3, 1);
 		chess.putPiece(player1, Rook, 3, 4);
 		chess.putPiece(player1, Rook, 6, 1);
 		chess.putPiece(player1, Rook, 3, 6);
-		chess.putPiece(player1, Rook, 6, 4);
 		chess.gameStart();
 	});
 	</script>
