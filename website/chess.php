@@ -207,10 +207,17 @@
 					id = id.replace(/[tile-]/g, '');
 
 					var piece = self.getPiece(id.charAt(0), id.charAt(1));
-					var owner = piece.getOwner();
+					var tile = self.getTile(id.charAt(0), id.charAt(1));
+					if(piece != null){
+						var owner = piece.getOwner();
+					}
+					//Move
+					if((self.activePlayer.getSelection() != null) && (self.activePlayer.getSelection().looksAt(tile))){
+						console.log("legal move");
+						return;
 
 					//Selection
-					if(self.activePlayer == owner && (self.activePlayer.getSelection() != piece)) {		//If the active player owns this piece, and the player hasn't already selected this piece
+					} else if(self.activePlayer == owner && (self.activePlayer.getSelection() != piece)) {		//If the active player owns this piece, and the player hasn't already selected this piece
 						self.revertSelectionHighlight(self.activePlayer.getSelection());
 						self.revertHighlights(self.activePlayer.getSelection());
 
@@ -219,12 +226,21 @@
 						self.selectionHighlight(piece);
 						self.highlightMoves(piece);
 						self.highlightEats(piece);
+						return;
 
 					//Deselection.
 					} else if(self.activePlayer.getSelection() == piece){	//If the active player has this piece as her selection
 						self.activePlayer.deselect();
 						self.revertSelectionHighlight(piece);
+						return;
+					//eat and move
+					} else if((piece != null) && (self.activePlayer.getSelection() != null) && (self.activePlayer.getSelection().targets(piece))){	//If the target (piece) can be found in the validEats of the activePiece.
+						console.log("Legal eat");
+						return;
 					}
+					console.log("Not an expected case");
+					return;
+
 				});
 			};
 
@@ -465,6 +481,34 @@
 
 		ChessPiece.prototype.getValidEats = function() {
 			return this.validEats;
+		}
+
+		ChessPiece.prototype.targets = function(piece){
+			var px = piece.getX();
+			var py = piece.getY();
+			var eats = this.validEats;
+			for(var i = 0; i < eats.length; i++){
+				console.log("eats[i] = "+eats[i]);
+				console.log("[px, py] = ["+px+", "+py+"]");
+				if((eats[i][0] == px) && (eats[i][1] == py)){
+					return true;
+				}
+			}
+			return false;
+		}
+		ChessPiece.prototype.looksAt = function(tile){
+			console.log(tile);
+			var tx = tile.getX();
+			var ty = tile.getY();
+			var moves = this.validMoves;
+			for(var i = 0; i < moves.length; i++){
+				console.log("moves[i] = "+moves[i]);
+				console.log("[tx, ty] = ["+tx+", "+ty+"]");
+				if((moves[i][0] == tx) && (moves[i][1] == ty)){
+					return true;
+				}
+			}
+			return false;			
 		}
 
 		ChessPiece.prototype.getOwner = function() {
