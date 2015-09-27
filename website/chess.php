@@ -78,7 +78,7 @@
 				this.white;
 				this.black;
 				this.activePlayer;
-
+				this.otherPlayer;
 				this.plugins = {};
 			}
 			Chess.prototype.gameStart = function(white, black) {
@@ -110,7 +110,17 @@
 				this.activePlayer = player;
 				this.activePlayer.setTurn(true);
 
-			}		
+			}
+
+			Chess.prototype.turnOver = function(){
+				var swp;
+				this.activePlayer.setTurn(false);
+				swp = this.activePlayer;
+				this.activePlayer = this.otherPlayer;
+				this.otherPlayer = swp;
+				this.activePlayer.setTurn(true);
+			}
+
 			/**
 			 * Intializes the Chess Board
 			 *
@@ -201,7 +211,7 @@
 
 				});
 				//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Controls the mouseovers
-
+				//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Controls the clicks
 				this.container.on('click', '.tile', function(e) {
 					var id = $(this).prop("id");
 					id = id.replace(/[tile-]/g, '');
@@ -213,7 +223,21 @@
 					}
 					//Move
 					if((self.activePlayer.getSelection() != null) && (self.activePlayer.getSelection().looksAt(tile))){
+						var movingPiece = self.activePlayer.getSelection();
+						self.revertSelectionHighlight(movingPiece);
+						self.revertHighlights(movingPiece);
+						tile.setPiece(movingPiece);
+						movingPiece.getTile().updatePiece(null);
+
+						self.activePlayer.deselect();
+						movingPiece.moveTo(tile);
+						self.recalculateAllMoves();
 						console.log("legal move");
+
+						//Because when we click on a tile the mouse is there, we expect to see the highlights.
+						self.highlightMoves(movingPiece);
+						self.highlightEats(movingPiece);
+						//self.turnOver();
 						return;
 
 					//Selection
@@ -226,12 +250,14 @@
 						self.selectionHighlight(piece);
 						self.highlightMoves(piece);
 						self.highlightEats(piece);
+						console.log("Piece selected");
 						return;
 
 					//Deselection.
 					} else if(self.activePlayer.getSelection() == piece){	//If the active player has this piece as her selection
 						self.activePlayer.deselect();
 						self.revertSelectionHighlight(piece);
+						console.log("Piece deselected");
 						return;
 					//eat and move
 					} else if((piece != null) && (self.activePlayer.getSelection() != null) && (self.activePlayer.getSelection().targets(piece))){	//If the target (piece) can be found in the validEats of the activePiece.
@@ -242,6 +268,7 @@
 					return;
 
 				});
+				//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Controls the clicks
 			};
 
 			Chess.prototype.putPiece = function(owner, archetype, x, y){
@@ -440,10 +467,20 @@
 
 		ChessTile.prototype.setPiece = function(piece) {
 			this.piece = piece;
-			this.$element.append(this.piece.getElement());
+			if(piece != null){
+				this.$element.append(this.piece.getElement());
+			}
 			return;
 		};
-		
+
+		ChessTile.prototype.updatePiece = function(piece){
+			this.setPiece(piece);
+			this.$element.empty();
+			if(piece != null){
+				this.$element.append(this.piece.getElement());
+			}
+		}
+
 		ChessTile.prototype.getPiece = function() {
 			return this.piece;
 		};		
@@ -470,7 +507,9 @@
 		ChessPiece.prototype.getElement = function() {
 			return this.$element;
 		}
-
+		ChessPiece.prototype.getTile = function(){
+			return this.type.tile;	
+		}
 		ChessPiece.prototype.calculateMoves = function() {
 			this.type.calculateValidMoves();
 		}
@@ -481,6 +520,10 @@
 
 		ChessPiece.prototype.getValidEats = function() {
 			return this.validEats;
+		}
+		ChessPiece.prototype.moveTo = function(tile){
+			this.type.setTile(tile);
+			this.type.calculateValidMoves();
 		}
 
 		ChessPiece.prototype.targets = function(piece){
@@ -542,6 +585,7 @@
 		}
 
 		Rook.prototype.setTile = function(tile){
+			this.tile = tile;
 			this.tilex = tile.getX();
 			this.tiley = tile.getY();
 		}
