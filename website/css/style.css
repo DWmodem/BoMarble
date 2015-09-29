@@ -1,0 +1,59 @@
+canvas { 
+		width: 100%;
+		height: 100%;
+}
+
+body {
+	background-color: rgb(113, 70, 113);
+	margin:0;
+	padding:0;
+	height:100%;
+}
+
+#wrapper {
+	min-height: 100%;
+	position: relative;
+	/*background: #CCFF66;*/
+}
+
+.darkerBO{
+	background: #3D3D29;
+}
+
+#header {
+	background: #ededed;
+	padding: 10px;
+}
+
+#content {
+	padding-bottom: 100px; /* Height of the footer element */
+}
+
+.fillWidth{
+	width: 100%;
+}
+
+#footer {
+	background: #ffab62;
+	width: 100%;
+	height: 100px;
+	position: relative;
+	bottom: 0;
+	left: 0;
+}
+
+.buttonDiv{
+	margin: 0 auto;
+}
+
+#primaryCanvas{
+	width: 100%;
+	height: 700px;
+}
+#primaryCanvas.fillWidth{
+	width: 100%;
+	height: 400px;
+}
+.red{
+	background: red;
+}
