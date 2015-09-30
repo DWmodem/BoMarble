@@ -767,68 +767,45 @@
 			height = this.height;
 			width = this.width;
 			board = this.board;
-			rookleft = function(){
-				for(j = tilex-1; j >= 0; j--){
-					if(board[j][tiley].isEmpty()){		//If the tile is empty
-						newMoves.push([j, tiley]);
-					} else {
-						if(board[j][tiley].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+j+") is an edible piece");
-							newEats.push([j, tiley]);
-						}
-						break;
-					}
-				}
+			
+			//Moves
+			if(	((tiley-1) >= 0) &&
+				board[tilex][tiley-1].isEmpty()) {
+					newMoves.push([tilex, (tiley-1)]);
+			}
+			if(	((tiley+1) < height) &&
+				board[tilex][tiley+1].isEmpty()) {
+					newMoves.push([tilex, (tiley+1)]);
+			}
+			if(	((tilex-1) >= 0) &&
+				board[tilex-1][tiley].isEmpty()) {
+					newMoves.push([tilex-1, tiley]);
+			}
+			if(	((tilex+1) < width) &&
+				board[tilex+1][tiley].isEmpty()) {
+					newMoves.push([tilex+1, tiley]);
 			}
 
-			rookright = function(){
-				for(j = tilex+1; j < width; j++){
-					if(board[j][tiley].isEmpty()){		//If the tile is empty
-						newMoves.push([j, tiley]);
-					} else {
-						if(board[j][tiley].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+j+") is an edible piece");
-							newEats.push([j, tiley]);
-						}
-						break;
-					}
-				}
+			if(	((tiley-1) >= 0) &&
+				((tilex-1) >= 0) &&
+				board[tilex-1][tiley-1].isEmpty()) {
+					newMoves.push([tilex-1, tiley-1]);
 			}
-
-			rookup = function(){
-				for(i = tiley-1; i >= 0; i--){
-					if(board[tilex][i].isEmpty()){
-						newMoves.push([tilex, i]);
-
-					} else {
-						if(board[tilex][i].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+i+") is an edible piece");
-							newEats.push([tilex, i]); //add the piece if it is an enemy piece
-						}
-						break;	//Do not continue, rooks cannot eat past pieces.
-					}
-				}
+			if(	((tiley+1) < height) &&
+				((tilex+1) < width) &&
+				board[tilex+1][tiley+1].isEmpty()) {
+					newMoves.push([tilex+1, (tiley+1)]);
 			}
-
-			rookdown = function(){
-				for(i = tiley+1; i < height; i++){
-					if(board[tilex][i].isEmpty()){		//If the tile is empty
-						newMoves.push([tilex, i]);
-
-					} else {
-						if(board[tilex][i].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+i+") is an edible piece");
-							newEats.push([tilex, i]); //add the piece if it is an enemy piece
-						}
-						break;	//Do not continue, rooks cannot eat past pieces.
-					}
-				}
+			if(	((tilex-1) >= 0) &&
+				((tiley+1) < height) &&
+				board[tilex-1][tiley+1].isEmpty()) {
+					newMoves.push([tilex-1, tiley+1]);
 			}
-			rookleft();
-			rookup();
-			rookdown();
-			rookright();
-
+			if(	((tilex+1) < width) &&
+				((tiley-1) >= 0) &&
+				board[tilex+1][tiley-1].isEmpty()) {
+					newMoves.push([tilex+1, tiley-1]);
+			}
 			this.piece.validMoves = newMoves;
 			this.piece.validEats = newEats;
 		}
