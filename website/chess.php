@@ -757,7 +757,7 @@
 			this.piece = piece;
 		}
 
-		King.prototype.calculateValidMoves = function(){
+		King.prototype.calculateValidMoves = function() {
 			newMoves = [];
 			newEats = [];
 			var i = 0;
@@ -767,45 +767,86 @@
 			height = this.height;
 			width = this.width;
 			board = this.board;
-			
-			//Moves
-			if(	((tiley-1) >= 0) &&
-				board[tilex][tiley-1].isEmpty()) {
+
+			//Moves up
+			if(	((tiley-1) >= 0)){
+				if(board[tilex][tiley-1].isEmpty()){
 					newMoves.push([tilex, (tiley-1)]);
+
+				} else if(board[tilex][tiley-1].hasDiffOwner(this.tile)){
+					newEats.push([tilex, (tiley-1)]);
+				}
 			}
-			if(	((tiley+1) < height) &&
-				board[tilex][tiley+1].isEmpty()) {
-					newMoves.push([tilex, (tiley+1)]);
-			}
-			if(	((tilex-1) >= 0) &&
-				board[tilex-1][tiley].isEmpty()) {
-					newMoves.push([tilex-1, tiley]);
-			}
-			if(	((tilex+1) < width) &&
-				board[tilex+1][tiley].isEmpty()) {
-					newMoves.push([tilex+1, tiley]);
+			//Moves down			
+			if(	((tiley+1) < height)){
+				if(board[tilex][tiley+1].isEmpty()){
+					newMoves.push([tilex, tiley+1]);
+
+				} else if(board[tilex][tiley+1].hasDiffOwner(this.tile)){
+					newEats.push([tilex, tiley+1]);
+				}
 			}
 
+			//Moves left 
+			if(	((tilex-1) >= 0)){
+				if(board[tilex-1][tiley].isEmpty()){
+					newMoves.push([tilex-1, tiley]);
+					
+				} else if(board[tilex-1][tiley].hasDiffOwner(this.tile)){
+					newEats.push([tilex-1, tiley]);
+				}
+			}
+
+			//Moves right
+			if(	((tilex+1) < width)){
+				if(board[tilex+1][tiley].isEmpty()){
+					newMoves.push([tilex+1, tiley]);
+
+				} else if(board[tilex+1][tiley].hasDiffOwner(this.tile)){
+					newEats.push([tilex+1, tiley]);
+				}
+			}
+
+			//Moves up-left
 			if(	((tiley-1) >= 0) &&
-				((tilex-1) >= 0) &&
-				board[tilex-1][tiley-1].isEmpty()) {
+				((tilex-1) >= 0)){
+				if(board[tilex-1][tiley-1].isEmpty()) {
 					newMoves.push([tilex-1, tiley-1]);
+
+				} else if(board[tilex-1][tiley-1].hasDiffOwner(this.tile)){
+					newEats.push([tilex-1, tiley-1]);
+				}
 			}
+			//Moves down-right
 			if(	((tiley+1) < height) &&
-				((tilex+1) < width) &&
-				board[tilex+1][tiley+1].isEmpty()) {
+				((tilex+1) < width)){
+				if(board[tilex+1][tiley+1].isEmpty()){
 					newMoves.push([tilex+1, (tiley+1)]);
+
+				} else if(board[tilex+1][tiley+1].hasDiffOwner(this.tile)){
+					newEats.push([tilex+1, tiley+1]);
+				}
 			}
+			//Moves down-left
 			if(	((tilex-1) >= 0) &&
-				((tiley+1) < height) &&
-				board[tilex-1][tiley+1].isEmpty()) {
+				((tiley+1) < height)){
+				if(board[tilex-1][tiley+1].isEmpty()){
 					newMoves.push([tilex-1, tiley+1]);
+				} else if(board[tilex-1][tiley+1].hasDiffOwner(this.tile)){
+					newEats.push([tilex-1, tiley+1]);
+				}
 			}
+
+			//Moves up-right
 			if(	((tilex+1) < width) &&
-				((tiley-1) >= 0) &&
-				board[tilex+1][tiley-1].isEmpty()) {
+				((tiley-1) >= 0)) {
+				if(board[tilex+1][tiley-1].isEmpty()){
 					newMoves.push([tilex+1, tiley-1]);
+				} else if(board[tilex+1][tiley-1].hasDiffOwner(this.tile)){
+					newEats.push([tilex+1, tiley-1]);
+				}
 			}
+
 			this.piece.validMoves = newMoves;
 			this.piece.validEats = newEats;
 		}
