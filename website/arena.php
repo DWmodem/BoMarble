@@ -9,29 +9,14 @@
 		<!-- Optional theme -->
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
 		<link href="../CSS/style.css" rel="stylesheet" type="text/css">
-		<title>My first Three.js app</title>
-		<style>
-		#primaryCanvas {
-			padding: 0px;
-			margin: auto;
-			background: black;
-			width: 100%;
-
-		}
-		</style>
+		<title>Arena Battles</title>
 	</head>
 
 	<body>
 		<div class="container">
-			<canvas id="primaryCanvas"></canvas> 
+			<?php include('gamebox.php'); ?>
 		</div>
 		<div id="footer"></div>	
-
-		<script src="../javascript/three.min.js"></script>
-		<script src="../javascript/jquery-2.1.4.min.js"></script>
-		<script src="../javascript/inty-js.js"></script>
-		<script src="../javascript/forestfire/renderEngine.js"></script>
-		<script src="../javascript/forestfire/forestFire.js"></script>
 
 		<!-- Latest compiled and minified JavaScript -->
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>

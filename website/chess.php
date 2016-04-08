@@ -45,6 +45,7 @@
 </head>
 
 <body>
+	<?include("template.php");?>
 	<div class="container">
 		<h1></h1>
 		<div id="tiles" class="center"></div>
@@ -260,7 +261,7 @@
 
 					//Only revertHighlight your own pieces
 					//Only revertHighlight pieces if activePlayer has no selection made (Nothing should happen when a selection is made!!!)
-					if((self.activePlayer == piece.getOwner()) && (piece.getOwner().getSelection() == null)) {
+					if(!tile.isEmpty() && (self.activePlayer == piece.getOwner()) && (piece.getOwner().getSelection() == null)) {
 						self.revertHighlights(piece);
 					}
 
@@ -883,6 +884,7 @@
 		}
 
 		Queen.prototype.calculateValidMoves = function(){
+			self = this;
 			newMoves = [];
 			newEats = [];
 			var i = 0;
@@ -892,6 +894,8 @@
 			height = this.height;
 			width = this.width;
 			board = this.board;
+			this.tile = chess.getTile(tilex, tiley);
+
 			rookleft = function(){
 				for(j = tilex-1; j >= 0; j--){
 					if(board[j][tiley].isEmpty()){		//If the tile is empty
@@ -949,6 +953,66 @@
 					}
 				}
 			}
+			foolrightup = function(){
+				for(var x = tilex+1, y = tiley-1; (x < width) && (y >= 0); x++, y--){		//Friggin fancy for loop
+					if(board[x][y].isEmpty()){		//If the tile is empty
+						newMoves.push([x, y]);
+					} else {
+						if(board[x][y].hasDiffOwner(self.tile)){
+							console.log("For ("+tilex+", "+tiley+"), ("+x+", "+y+") is an edible piece");
+							newEats.push([x, y]);
+						}
+						break;
+					}
+				}
+			}
+
+			foolleftup = function(){
+				for(var x = tilex-1, y = tiley-1; (x >= 0) && (y >= 0); x--, y--){		//Friggin fancy for loop
+					if(board[x][y].isEmpty()){		//If the tile is empty
+						newMoves.push([x, y]);
+					} else {
+						if(board[x][y].hasDiffOwner(self.tile)){
+							console.log("For ("+tilex+", "+tiley+"), ("+x+", "+y+") is an edible piece");
+							newEats.push([x, y]);
+						}
+						break;
+					}
+				}
+			}
+
+			foolleftdown = function(){
+				for(var x = tilex-1, y = tiley+1; (x >= 0) && (y < height); x--, y++){		//Friggin fancy for loop
+					if(board[x][y].isEmpty()){		//If the tile is empty
+						newMoves.push([x, y]);
+					} else {
+						if(board[x][y].hasDiffOwner(self.tile)){
+							console.log("For ("+tilex+", "+tiley+"), ("+x+", "+y+") is an edible piece");
+							newEats.push([x, y]);
+						}
+						break;
+					}
+				}
+			}
+
+			foolrightdown = function(){
+				for(var x = tilex+1, y = tiley+1; (x < width) && (y < height); x++, y++){		//Friggin fancy for loop
+					if(board[x][y].isEmpty()){		//If the tile is empty
+						newMoves.push([x, y]);
+					} else {
+						if(board[x][y].hasDiffOwner(self.tile)){
+							console.log("For ("+tilex+", "+tiley+"), ("+x+", "+y+") is an edible piece");
+							newEats.push([x, y]);
+						}
+						break;
+					}
+				}
+			}
+
+			foolrightdown();
+			foolleftdown();
+			foolleftup();
+			foolrightup();
 			rookleft();
 			rookup();
 			rookdown();
@@ -990,6 +1054,7 @@
 		}
 
 		Fool.prototype.calculateValidMoves = function(){
+			var self = this;
 			newMoves = [];
 			newEats = [];
 			var i = 0;
@@ -999,68 +1064,68 @@
 			height = this.height;
 			width = this.width;
 			board = this.board;
-			rookleft = function(){
-				for(j = tilex-1; j >= 0; j--){
-					if(board[j][tiley].isEmpty()){		//If the tile is empty
-						newMoves.push([j, tiley]);
+			this.tile = chess.getTile(tilex, tiley);
+			var tile = this.tile;
+
+			foolrightup = function(){
+				for(var x = tilex+1, y = tiley-1; (x < width) && (y >= 0); x++, y--){		//Friggin fancy for loop
+					if(board[x][y].isEmpty()){		//If the tile is empty
+						newMoves.push([x, y]);
 					} else {
-						if(board[j][tiley].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+j+") is an edible piece");
-							newEats.push([j, tiley]);
+						if(board[x][y].hasDiffOwner(self.tile)){
+							console.log("For ("+tilex+", "+tiley+"), ("+x+", "+y+") is an edible piece");
+							newEats.push([x, y]);
 						}
 						break;
 					}
 				}
 			}
 
-			rookright = function(){
-				for(j = tilex+1; j < width; j++){
-					if(board[j][tiley].isEmpty()){		//If the tile is empty
-						newMoves.push([j, tiley]);
+			foolleftup = function(){
+				for(var x = tilex-1, y = tiley-1; (x >= 0) && (y >= 0); x--, y--){		//Friggin fancy for loop
+					if(board[x][y].isEmpty()){		//If the tile is empty
+						newMoves.push([x, y]);
 					} else {
-						if(board[j][tiley].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+j+") is an edible piece");
-							newEats.push([j, tiley]);
+						if(board[x][y].hasDiffOwner(self.tile)){
+							console.log("For ("+tilex+", "+tiley+"), ("+x+", "+y+") is an edible piece");
+							newEats.push([x, y]);
 						}
 						break;
 					}
 				}
 			}
 
-			rookup = function(){
-				for(i = tiley-1; i >= 0; i--){
-					if(board[tilex][i].isEmpty()){
-						newMoves.push([tilex, i]);
-
+			foolleftdown = function(){
+				for(var x = tilex-1, y = tiley+1; (x >= 0) && (y < height); x--, y++){		//Friggin fancy for loop
+					if(board[x][y].isEmpty()){		//If the tile is empty
+						newMoves.push([x, y]);
 					} else {
-						if(board[tilex][i].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+i+") is an edible piece");
-							newEats.push([tilex, i]); //add the piece if it is an enemy piece
+						if(board[x][y].hasDiffOwner(self.tile)){
+							console.log("For ("+tilex+", "+tiley+"), ("+x+", "+y+") is an edible piece");
+							newEats.push([x, y]);
 						}
-						break;	//Do not continue, rooks cannot eat past pieces.
+						break;
 					}
 				}
 			}
 
-			rookdown = function(){
-				for(i = tiley+1; i < height; i++){
-					if(board[tilex][i].isEmpty()){		//If the tile is empty
-						newMoves.push([tilex, i]);
-
+			foolrightdown = function(){
+				for(var x = tilex+1, y = tiley+1; (x < width) && (y < height); x++, y++){		//Friggin fancy for loop
+					if(board[x][y].isEmpty()){		//If the tile is empty
+						newMoves.push([x, y]);
 					} else {
-						if(board[tilex][i].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+i+") is an edible piece");
-							newEats.push([tilex, i]); //add the piece if it is an enemy piece
+						if(board[x][y].hasDiffOwner(self.tile)){
+							console.log("For ("+tilex+", "+tiley+"), ("+x+", "+y+") is an edible piece");
+							newEats.push([x, y]);
 						}
-						break;	//Do not continue, rooks cannot eat past pieces.
+						break;
 					}
 				}
 			}
-			rookleft();
-			rookup();
-			rookdown();
-			rookright();
-
+			foolrightdown();
+			foolleftdown();
+			foolleftup();
+			foolrightup();
 			this.piece.validMoves = newMoves;
 			this.piece.validEats = newEats;
 		}
@@ -1106,67 +1171,85 @@
 			height = this.height;
 			width = this.width;
 			board = this.board;
-			rookleft = function(){
-				for(j = tilex-1; j >= 0; j--){
-					if(board[j][tiley].isEmpty()){		//If the tile is empty
-						newMoves.push([j, tiley]);
-					} else {
-						if(board[j][tiley].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+j+") is an edible piece");
-							newEats.push([j, tiley]);
-						}
-						break;
-					}
+
+			//Moves bigup smalleft
+			if(	((tilex-1) >= 0) && ((tiley-2) >= 0)) {
+				if(board[tilex-1][tiley-2].isEmpty()){
+					newMoves.push([tilex-1, (tiley-2)]);
+
+				} else if(board[tilex-1][tiley-2].hasDiffOwner(this.tile)){
+					newEats.push([tilex-1, (tiley-2)]);
+				}
+			}
+			//Moves bigdown smalleft			
+			if( ((tilex-1) >= 0) && ((tiley+2) < height)) {
+				if(board[tilex-1][tiley+2].isEmpty()){
+					newMoves.push([tilex-1, tiley+2]);
+
+				} else if(board[tilex-1][tiley+2].hasDiffOwner(this.tile)){
+					newEats.push([tilex-1, tiley+2]);
 				}
 			}
 
-			rookright = function(){
-				for(j = tilex+1; j < width; j++){
-					if(board[j][tiley].isEmpty()){		//If the tile is empty
-						newMoves.push([j, tiley]);
-					} else {
-						if(board[j][tiley].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+j+") is an edible piece");
-							newEats.push([j, tiley]);
-						}
-						break;
-					}
+			//Moves bigup smallright
+			if( ((tilex+1) < width) && ((tiley-2) >= 0)) {
+				if(board[tilex+1][tiley-2].isEmpty()){
+					newMoves.push([tilex+1, tiley-2]);
+					
+				} else if(board[tilex+1][tiley-2].hasDiffOwner(this.tile)){
+					newEats.push([tilex+1, tiley-2]);
 				}
 			}
 
-			rookup = function(){
-				for(i = tiley-1; i >= 0; i--){
-					if(board[tilex][i].isEmpty()){
-						newMoves.push([tilex, i]);
+			//Moves bigdown smallright
+			if( ((tilex+1) < width) && ((tiley+2) < height)) {
+				if(board[tilex+1][tiley+2].isEmpty()){
+					newMoves.push([tilex+1, tiley+2]);
 
-					} else {
-						if(board[tilex][i].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+i+") is an edible piece");
-							newEats.push([tilex, i]); //add the piece if it is an enemy piece
-						}
-						break;	//Do not continue, rooks cannot eat past pieces.
-					}
+				} else if(board[tilex+1][tiley+2].hasDiffOwner(this.tile)){
+					newEats.push([tilex+1, tiley+2]);
 				}
 			}
 
-			rookdown = function(){
-				for(i = tiley+1; i < height; i++){
-					if(board[tilex][i].isEmpty()){		//If the tile is empty
-						newMoves.push([tilex, i]);
+			//Moves smallup bigleft
+			if(	((tilex-2) >= 0) && ((tiley-1) >= 0)) {
+				if(board[tilex-2][tiley-1].isEmpty()){
+					newMoves.push([tilex-2, (tiley-1)]);
 
-					} else {
-						if(board[tilex][i].hasDiffOwner(chess.getTile(tilex, tiley))){
-							console.log("For ("+tilex+", "+tiley+"), ("+tilex+", "+i+") is an edible piece");
-							newEats.push([tilex, i]); //add the piece if it is an enemy piece
-						}
-						break;	//Do not continue, rooks cannot eat past pieces.
-					}
+				} else if(board[tilex-2][tiley-1].hasDiffOwner(this.tile)){
+					newEats.push([tilex-2, (tiley-1)]);
 				}
 			}
-			rookleft();
-			rookup();
-			rookdown();
-			rookright();
+
+			//Moves smallup bigright			
+			if( ((tilex+2) < width) && ((tiley-1) >= 0)) {
+				if(board[tilex+2][tiley-1].isEmpty()){
+					newMoves.push([tilex+2, tiley-1]);
+
+				} else if(board[tilex+2][tiley-1].hasDiffOwner(this.tile)){
+					newEats.push([tilex+2, tiley-1]);
+				}
+			}
+
+			//Moves smalldown bigleft
+			if(	((tilex+2) < width) && ((tiley+1) < height)) {
+				if(board[tilex+2][tiley+1].isEmpty()){
+					newMoves.push([tilex+2, (tiley+1)]);
+
+				} else if(board[tilex+2][tiley+1].hasDiffOwner(this.tile)){
+					newEats.push([tilex+2, (tiley+1)]);
+				}
+			}
+
+			//Moves smalldown bigright
+			if(	((tilex-2) >= 0) && ((tiley+1) < height)) {
+				if(board[tilex-2][tiley+1].isEmpty()){
+					newMoves.push([tilex-2, (tiley+1)]);
+
+				} else if(board[tilex-2][tiley+1].hasDiffOwner(this.tile)){
+					newEats.push([tilex-2, (tiley+1)]);
+				}
+			}
 
 			this.piece.validMoves = newMoves;
 			this.piece.validEats = newEats;
@@ -1381,7 +1464,7 @@
 		window.chess = chess;
 		chess.setupBoard();
 
-		// chess.putPiece(player1, Pawn, 5, 4, true);
+		// chess.putPiece(player1, Knight, 3, 4);
 		// chess.putPiece(player2, Rook, 6, 5);
 		// chess.putPiece(player2, Pawn, 6, 4, true);
 
